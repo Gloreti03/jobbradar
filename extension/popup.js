@@ -2,7 +2,7 @@
 // otherwise the visible text), sends it to POST /jobs/import on our backend and opens the
 // job page in the frontend. The extension talks ONLY to our backend (BLUEPRINT sec. 8).
 
-const DEFAULTS = { api: "http://localhost:8000", app: "http://localhost:5173" };
+const DEFAULTS = { api: "http://localhost:8000", app: "http://localhost:8080" }; // app = frontend dev server (Vite on 8080)
 const JOB_PAGE = (app, id) => `${app}/jobs/${id}`; // frontend route of the job page
 
 const $ = (id) => document.getElementById(id);

@@ -1,0 +1,168 @@
+{
+  "id": 1,
+  "application_id": 1,
+  "mode": "text",
+  "plan": [
+    {
+      "id": 1,
+      "kind": "intro",
+      "question": "Tell me a bit about yourself and why you are interested in energy forecasting.",
+      "focus": "Communication and motivation overview"
+    },
+    {
+      "id": 2,
+      "kind": "behavioral",
+      "question": "In your analyst job you automated data cleaning of POS exports. Walk me through what you built and the impact it had.",
+      "focus": "Ownership and impact from real experience"
+    },
+    {
+      "id": 3,
+      "kind": "behavioral",
+      "question": "Tell me about a time you had to explain an analysis result to non-technical managers.",
+      "focus": "Stakeholder communication"
+    },
+    {
+      "id": 4,
+      "kind": "technical",
+      "question": "How did you validate your bike-share forecasting model, and how would you adapt that approach to hourly energy demand?",
+      "focus": "Time series validation and transfer to the domain"
+    },
+    {
+      "id": 5,
+      "kind": "gap",
+      "question": "This role involves putting models into production. You haven't done that yet — how would you approach deploying a forecasting model?",
+      "focus": "Gap: production deployment"
+    },
+    {
+      "id": 6,
+      "kind": "motivation",
+      "question": "Why Nordlys Energi, and what would you like to learn in your first year?",
+      "focus": "Company motivation and growth mindset"
+    }
+  ],
+  "transcript": [
+    {
+      "role": "interviewer",
+      "content": "Hi Sofia, thanks for joining. Let's start: Tell me a bit about yourself and why you are interested in energy forecasting.",
+      "question_id": 1
+    },
+    {
+      "role": "candidate",
+      "content": "I'm a data science master's student at UiO with a statistics background. I got into forecasting through my bike-share project, and energy demand feels like the same problem with a much bigger impact.",
+      "question_id": 1
+    },
+    {
+      "role": "interviewer",
+      "content": "Great. In your analyst job you automated data cleaning of POS exports. Walk me through what you built and the impact it had.",
+      "question_id": 2
+    },
+    {
+      "role": "candidate",
+      "content": "The store POS exports were messy CSVs. I wrote a pandas script that standardised them every week, so the dashboards were updated without manual work.",
+      "question_id": 2
+    },
+    {
+      "role": "interviewer",
+      "content": "Tell me about a time you had to explain an analysis result to non-technical managers.",
+      "question_id": 3
+    },
+    {
+      "role": "candidate",
+      "content": "I presented A/B test results on promotional emails to management, using one simple chart and focusing on what to do next.",
+      "question_id": 3
+    },
+    {
+      "role": "interviewer",
+      "content": "How did you validate your bike-share forecasting model, and how would you adapt that approach to hourly energy demand?",
+      "question_id": 4
+    },
+    {
+      "role": "candidate",
+      "content": "I used a time-based split and compared against a seasonal naive baseline. For energy I'd do rolling-origin validation and add weather and holiday features.",
+      "question_id": 4
+    },
+    {
+      "role": "interviewer",
+      "content": "This role involves putting models into production. You haven't done that yet — how would you approach deploying a forecasting model?",
+      "question_id": 5
+    },
+    {
+      "role": "candidate",
+      "content": "I'd package the model in a Docker container with a small API, schedule retraining, and monitor the error against the baseline.",
+      "question_id": 5
+    },
+    {
+      "role": "interviewer",
+      "content": "Why Nordlys Energi, and what would you like to learn in your first year?",
+      "question_id": 6
+    },
+    {
+      "role": "candidate",
+      "content": "You work on the energy transition, and I'd like to learn how forecasting models run in production at scale.",
+      "question_id": 6
+    },
+    {
+      "role": "interviewer",
+      "content": "Thank you Sofia, that's all from my side. You'll get your feedback now.",
+      "question_id": null
+    }
+  ],
+  "feedback": {
+    "overall_score": 74,
+    "summary": "Clear and honest answers grounded in real experience. The technical answer on validation was the strongest; behavioural answers need more concrete results.",
+    "strengths": [
+      "Connected the bike-share project convincingly to energy forecasting",
+      "Correct validation approach with a baseline comparison",
+      "Honest about the production gap with a sensible plan"
+    ],
+    "improvements": [
+      "Quantify impact in behavioural answers (time saved, decisions taken)",
+      "Use the STAR structure: situation, task, action, result",
+      "Mention specific things about Nordlys Energi in the motivation answer"
+    ],
+    "questions": [
+      {
+        "question_id": 1,
+        "question": "Tell me a bit about yourself and why you are interested in energy forecasting.",
+        "score": 4,
+        "comment": "Good, concise and relevant.",
+        "better_answer": "I'm finishing an MSc in Data Science at UiO after a BSc in Statistics. I spent two years as a part-time data analyst, and in my bike-share project I forecast hourly demand with gradient boosting — energy demand is the same kind of problem with a much bigger impact."
+      },
+      {
+        "question_id": 2,
+        "question": "In your analyst job you automated data cleaning of POS exports. Walk me through what you built and the impact it had.",
+        "score": 3,
+        "comment": "Clear, but the impact is missing.",
+        "better_answer": "Weekly POS exports arrived as inconsistent CSVs. I wrote a Python/pandas pipeline that cleaned and merged them, so the Power BI dashboards used by 12 store managers updated without manual work."
+      },
+      {
+        "question_id": 3,
+        "question": "Tell me about a time you had to explain an analysis result to non-technical managers.",
+        "score": 3,
+        "comment": "Good instinct, but add the outcome.",
+        "better_answer": "I ran A/B tests on promotional emails and presented the results to management with one chart and a clear recommendation, then explained what decision it supported."
+      },
+      {
+        "question_id": 4,
+        "question": "How did you validate your bike-share forecasting model, and how would you adapt that approach to hourly energy demand?",
+        "score": 5,
+        "comment": "Strong: time-based split, baseline, and a concrete plan for energy data.",
+        "better_answer": "I used a time-based split and compared against a seasonal naive baseline. For hourly energy demand I'd use rolling-origin validation, add weather and holiday features, and track error by hour of day."
+      },
+      {
+        "question_id": 5,
+        "question": "This role involves putting models into production. You haven't done that yet — how would you approach deploying a forecasting model?",
+        "score": 4,
+        "comment": "Honest and structured; mention monitoring for data drift too.",
+        "better_answer": "I haven't deployed models in production yet. I'd containerise the model with Docker, which I already use, expose it through a small API, schedule retraining and monitor the error and data drift against a baseline."
+      },
+      {
+        "question_id": 6,
+        "question": "Why Nordlys Energi, and what would you like to learn in your first year?",
+        "score": 3,
+        "comment": "Generic: link it to the company's specific work.",
+        "better_answer": "Short-term demand forecasting is central to the energy transition, and it builds directly on my forecasting project. In my first year I'd like to learn how forecasting models are run and monitored in production."
+      }
+    ]
+  }
+}

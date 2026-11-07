@@ -1,0 +1,316 @@
+{
+  "id": 1,
+  "job_id": 2,
+  "job": {
+    "id": 2,
+    "source": "fixture",
+    "source_id": "fx-002",
+    "title": "Data Scientist – Energy Forecasting",
+    "company": "Nordlys Energi",
+    "location": "Oslo",
+    "description": "Nordlys Energi is hiring a Data Scientist to improve our short-term energy demand forecasts. You will work with time series, gradient boosting and deep learning models, and put models in production with our ML engineers.\n\nRequirements:\n- MSc in data science, statistics, physics or similar\n- Strong Python (pandas, scikit-learn)\n- Experience with time series forecasting\n- Docker and Git\n- Working language is English",
+    "url": "https://example.com/jobs/fx-002",
+    "apply_url": "https://example.com/jobs/fx-002/apply",
+    "posted_at": "2026-11-04T12:00:00Z",
+    "expires_at": "2026-12-01T23:59:00Z",
+    "discovered_at": "2026-11-07T07:00:00Z",
+    "status": "active",
+    "language": "en",
+    "norwegian_required": false
+  },
+  "status": "applied",
+  "language": "en",
+  "cv": {
+    "name": "Sofia Bianchi",
+    "headline": "Data scientist (MSc) with time series forecasting and Python experience",
+    "contacts": {
+      "email": "sofia.bianchi@example.com",
+      "phone": "+47 400 00 000",
+      "location": "Oslo, Norway",
+      "linkedin": "https://www.linkedin.com/in/example-sofia",
+      "github": "https://github.com/example-sofia",
+      "website": null
+    },
+    "summary": "Master's student in Data Science at the University of Oslo (graduating June 2026) with a statistics background. Built a demand forecasting model on Oslo bike-share data with gradient boosting and has two years of part-time experience turning raw data into decisions.",
+    "skills": [
+      "Time series forecasting",
+      "Machine learning",
+      "Statistics",
+      "Data analysis",
+      "Data visualization"
+    ],
+    "experiences": [
+      {
+        "role": "Data Analyst (part-time)",
+        "company": "Ristorazione Nord SRL",
+        "location": "Milan, Italy",
+        "start_date": "2022-09",
+        "end_date": "2024-07",
+        "bullets": [
+          "Automated data cleaning of POS exports with Python and pandas",
+          "Built weekly sales dashboards in Power BI used by 12 store managers",
+          "Ran A/B tests on promotional emails and reported results to management"
+        ]
+      },
+      {
+        "role": "Teaching Assistant, Introductory Statistics",
+        "company": "University of Oslo",
+        "location": "Oslo, Norway",
+        "start_date": "2025-01",
+        "end_date": null,
+        "bullets": [
+          "Run weekly exercise sessions for groups of 25 students",
+          "Grade assignments and hold office hours in English"
+        ]
+      }
+    ],
+    "education": [
+      {
+        "degree": "MSc Data Science",
+        "institution": "University of Oslo",
+        "location": "Oslo, Norway",
+        "start_date": "2024-08",
+        "end_date": "2026-06",
+        "details": [
+          "Thesis: topic modelling of Norwegian news articles"
+        ]
+      },
+      {
+        "degree": "BSc Statistics",
+        "institution": "University of Milan",
+        "location": "Milan, Italy",
+        "start_date": "2021-09",
+        "end_date": "2024-07",
+        "details": []
+      }
+    ],
+    "projects": [
+      {
+        "name": "Oslo bike-share demand forecast",
+        "description": "Forecast hourly bike demand per station using public Oslo Bysykkel data and gradient boosting.",
+        "tools": [
+          "Python",
+          "scikit-learn",
+          "LightGBM"
+        ],
+        "url": "https://github.com/example-sofia/bysykkel-forecast"
+      },
+      {
+        "name": "Job ad language classifier",
+        "description": "Classifier detecting whether a job ad requires Norwegian, trained on 2,000 labelled ads.",
+        "tools": [
+          "Python",
+          "Hugging Face Transformers"
+        ],
+        "url": null
+      }
+    ],
+    "languages": [
+      {
+        "language": "Italian",
+        "level": "native"
+      },
+      {
+        "language": "English",
+        "level": "C1"
+      },
+      {
+        "language": "Norwegian",
+        "level": "A2"
+      }
+    ]
+  },
+  "cover_letter": "Dear Nordlys Energi team,\n\nI am applying for the Data Scientist – Energy Forecasting position. I am completing an MSc in Data Science at the University of Oslo, and forecasting is the area I enjoy most.\n\nIn my Oslo bike-share project I forecast hourly demand per station with gradient boosting, working with seasonality, weather effects and noisy public data — problems close to short-term energy demand. Before my master's, I spent two years as a part-time data analyst, where I automated data cleaning with Python and pandas and presented results to non-technical managers.\n\nI use Python, scikit-learn, Git and Docker daily. I have not yet deployed models in production, and I would be glad to learn this with your ML engineers.\n\nThank you for considering my application. I would be happy to tell you more in an interview.\n\nKind regards,\nSofia Bianchi",
+  "notes": {
+    "keywords_covered": [
+      "Python",
+      "pandas",
+      "scikit-learn",
+      "time series forecasting",
+      "gradient boosting",
+      "Docker",
+      "Git",
+      "MSc data science"
+    ],
+    "missing_requirements": [
+      "Deep learning models for forecasting",
+      "Putting models in production"
+    ],
+    "changes": [
+      "Headline focused on forecasting",
+      "Bike-share forecasting project moved to the top of projects",
+      "Data cleaning bullet moved first in the analyst role"
+    ],
+    "requirement_map": [
+      {
+        "requirement": "MSc in data science, statistics, physics or similar",
+        "importance": "required",
+        "status": "met",
+        "evidence": [
+          "MSc Data Science",
+          "BSc Statistics"
+        ]
+      },
+      {
+        "requirement": "Strong Python (pandas, scikit-learn)",
+        "importance": "required",
+        "status": "met",
+        "evidence": [
+          "Automated data cleaning of POS exports with Python and pandas"
+        ]
+      },
+      {
+        "requirement": "Experience with time series forecasting",
+        "importance": "required",
+        "status": "met",
+        "evidence": [
+          "Forecast hourly bike demand per station using public Oslo Bysykkel data and gradient boosting."
+        ]
+      },
+      {
+        "requirement": "Docker and Git",
+        "importance": "required",
+        "status": "partial",
+        "evidence": [
+          "Docker",
+          "Git"
+        ]
+      },
+      {
+        "requirement": "Deep learning models for forecasting",
+        "importance": "nice_to_have",
+        "status": "missing",
+        "evidence": []
+      },
+      {
+        "requirement": "Putting models in production with ML engineers",
+        "importance": "nice_to_have",
+        "status": "missing",
+        "evidence": []
+      }
+    ]
+  },
+  "snapshot": {
+    "job": {
+      "id": 2,
+      "source": "fixture",
+      "source_id": "fx-002",
+      "title": "Data Scientist – Energy Forecasting",
+      "company": "Nordlys Energi",
+      "location": "Oslo",
+      "description": "Nordlys Energi is hiring a Data Scientist to improve our short-term energy demand forecasts. You will work with time series, gradient boosting and deep learning models, and put models in production with our ML engineers.\n\nRequirements:\n- MSc in data science, statistics, physics or similar\n- Strong Python (pandas, scikit-learn)\n- Experience with time series forecasting\n- Docker and Git\n- Working language is English",
+      "url": "https://example.com/jobs/fx-002",
+      "apply_url": "https://example.com/jobs/fx-002/apply",
+      "posted_at": "2026-11-04T12:00:00Z",
+      "expires_at": "2026-12-01T23:59:00Z",
+      "discovered_at": "2026-11-07T07:00:00Z",
+      "status": "active",
+      "language": "en",
+      "norwegian_required": false
+    },
+    "cv": {
+      "name": "Sofia Bianchi",
+      "headline": "Data scientist (MSc) with time series forecasting and Python experience",
+      "contacts": {
+        "email": "sofia.bianchi@example.com",
+        "phone": "+47 400 00 000",
+        "location": "Oslo, Norway",
+        "linkedin": "https://www.linkedin.com/in/example-sofia",
+        "github": "https://github.com/example-sofia",
+        "website": null
+      },
+      "summary": "Master's student in Data Science at the University of Oslo (graduating June 2026) with a statistics background. Built a demand forecasting model on Oslo bike-share data with gradient boosting and has two years of part-time experience turning raw data into decisions.",
+      "skills": [
+        "Time series forecasting",
+        "Machine learning",
+        "Statistics",
+        "Data analysis",
+        "Data visualization"
+      ],
+      "experiences": [
+        {
+          "role": "Data Analyst (part-time)",
+          "company": "Ristorazione Nord SRL",
+          "location": "Milan, Italy",
+          "start_date": "2022-09",
+          "end_date": "2024-07",
+          "bullets": [
+            "Automated data cleaning of POS exports with Python and pandas",
+            "Built weekly sales dashboards in Power BI used by 12 store managers",
+            "Ran A/B tests on promotional emails and reported results to management"
+          ]
+        },
+        {
+          "role": "Teaching Assistant, Introductory Statistics",
+          "company": "University of Oslo",
+          "location": "Oslo, Norway",
+          "start_date": "2025-01",
+          "end_date": null,
+          "bullets": [
+            "Run weekly exercise sessions for groups of 25 students",
+            "Grade assignments and hold office hours in English"
+          ]
+        }
+      ],
+      "education": [
+        {
+          "degree": "MSc Data Science",
+          "institution": "University of Oslo",
+          "location": "Oslo, Norway",
+          "start_date": "2024-08",
+          "end_date": "2026-06",
+          "details": [
+            "Thesis: topic modelling of Norwegian news articles"
+          ]
+        },
+        {
+          "degree": "BSc Statistics",
+          "institution": "University of Milan",
+          "location": "Milan, Italy",
+          "start_date": "2021-09",
+          "end_date": "2024-07",
+          "details": []
+        }
+      ],
+      "projects": [
+        {
+          "name": "Oslo bike-share demand forecast",
+          "description": "Forecast hourly bike demand per station using public Oslo Bysykkel data and gradient boosting.",
+          "tools": [
+            "Python",
+            "scikit-learn",
+            "LightGBM"
+          ],
+          "url": "https://github.com/example-sofia/bysykkel-forecast"
+        },
+        {
+          "name": "Job ad language classifier",
+          "description": "Classifier detecting whether a job ad requires Norwegian, trained on 2,000 labelled ads.",
+          "tools": [
+            "Python",
+            "Hugging Face Transformers"
+          ],
+          "url": null
+        }
+      ],
+      "languages": [
+        {
+          "language": "Italian",
+          "level": "native"
+        },
+        {
+          "language": "English",
+          "level": "C1"
+        },
+        {
+          "language": "Norwegian",
+          "level": "A2"
+        }
+      ]
+    },
+    "cover_letter": "Dear Nordlys Energi team,\n\nI am applying for the Data Scientist – Energy Forecasting position. I am completing an MSc in Data Science at the University of Oslo, and forecasting is the area I enjoy most.\n\nIn my Oslo bike-share project I forecast hourly demand per station with gradient boosting, working with seasonality, weather effects and noisy public data — problems close to short-term energy demand. Before my master's, I spent two years as a part-time data analyst, where I automated data cleaning with Python and pandas and presented results to non-technical managers.\n\nI use Python, scikit-learn, Git and Docker daily. I have not yet deployed models in production, and I would be glad to learn this with your ML engineers.\n\nThank you for considering my application. I would be happy to tell you more in an interview.\n\nKind regards,\nSofia Bianchi",
+    "applied_at": "2026-11-07T10:15:00Z"
+  },
+  "created_at": "2026-11-07T10:00:00Z",
+  "applied_at": "2026-11-07T10:15:00Z"
+}

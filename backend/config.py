@@ -28,4 +28,4 @@ if _db_url.startswith("sqlite:///./"):
 DATABASE_URL = _db_url
 
 # --- CORS ---
-FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:8080")  # any localhost port is allowed anyway (main.py)

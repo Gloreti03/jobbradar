@@ -69,7 +69,8 @@ def extract_profile(cv_text: str, extra_text: str = "") -> Profile:
         cv_text=cv_text[:MAX_CV_CHARS] or "(no CV text: use the extra material)",
         extra_text=extra_text[:MAX_EXTRA_CHARS] or "(none)",
     )
-    profile = complete_json("smart", PROFILE_EXTRACT_SYSTEM, user, Profile, temperature=0.1, max_tokens=6000)
+    # modello veloce: lo smart impiega ~45 s anche su un CV di una pagina (BLUEPRINT: < 30 s)
+    profile = complete_json("fast", PROFILE_EXTRACT_SYSTEM, user, Profile, temperature=0.1, max_tokens=8000)
     profile.search_terms = _dedupe(profile.search_terms)[:MAX_SEARCH_TERMS]
     profile.missing_info = _dedupe(profile.missing_info)[:MAX_MISSING_INFO]
     profile.skills = _dedupe(profile.skills)

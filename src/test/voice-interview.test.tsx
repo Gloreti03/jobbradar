@@ -167,19 +167,20 @@ describe("Voice connection recovery", () => {
     const rec = recognizers[0]!;
     expect(rec.lang).toBe("en-US");
     expect(rec.start).toHaveBeenCalledOnce();
-    act(() => rec.onresult?.({ results: [[{ transcript: "Temporary browser words" }]] }));
+    act(() => rec.onresult?.({ results: [[{ transcript: "Uhm, Temporary hum… browser words" }]] }));
     expect(screen.getByRole("status", { name: "Your live captions" })).toHaveTextContent("Temporary browser words");
+    expect(screen.getByRole("status", { name: "Your live captions" })).not.toHaveTextContent(/\b(uhm|hum)\b/i);
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
     expect(rec.stop).toHaveBeenCalledOnce();
-    act(() => mocks.callbacks.onMessage?.({ message: "Official ElevenLabs answer", source: "user" }));
+    act(() => mocks.callbacks.onMessage?.({ message: "Um, Official ElevenLabs answer", source: "user" }));
     expect(screen.queryByText("Temporary browser words")).not.toBeInTheDocument();
-    expect(screen.getByText("Official ElevenLabs answer")).toBeInTheDocument();
+    expect(screen.getByText("Um, Official ElevenLabs answer")).toBeInTheDocument();
     mocks.saveVoiceTranscript.mockResolvedValue(interview);
     mocks.interviewFeedback.mockResolvedValue(interview.feedback);
     fireEvent.click(screen.getByRole("button", { name: "End interview" }));
     fireEvent.click(screen.getByRole("button", { name: "Get my feedback" }));
     await waitFor(() => expect(mocks.saveVoiceTranscript).toHaveBeenCalledWith(fixture.id, [
-      { role: "candidate", content: "Official ElevenLabs answer" },
+      { role: "candidate", content: "Um, Official ElevenLabs answer" },
     ]));
   });
 });

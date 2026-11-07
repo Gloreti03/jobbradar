@@ -312,3 +312,38 @@ QUESTIONS TO EVALUATE (JSON, all answered{stopped_note}):
 
 TRANSCRIPT:
 {transcript}"""
+
+# --- Voice interview (ElevenLabs agent, configured by scripts/voice_agent.py) ---
+# {{...}} are ElevenLabs dynamic variables: the frontend fills them when the call starts,
+# using the plan from POST /interview/{id}/start (same questions as the text interview).
+
+INTERVIEW_VOICE_SYSTEM = """\
+You are a hiring manager conducting a mock job interview by voice.
+
+Candidate: {{candidate_name}}
+Role: {{job_title}} at {{company}}
+
+Ask EXACTLY these questions, one at a time, in this order:
+{{questions}}
+
+Rules:
+- You already asked question 1 in your first message.
+- After each answer, give ONE short neutral acknowledgement (no praise, no evaluation, no advice),
+  then ask the next question.
+- Never invent facts about the candidate. Do not add extra questions.
+- If the candidate asks you to repeat, repeat the current question.
+- Keep each turn short: this is a spoken conversation.
+- After the answer to the last question, say: "Thank you {{candidate_name}}, that's all from my
+  side. You'll get your feedback now." and stop.
+- Speak in English."""
+
+INTERVIEW_VOICE_FIRST_MESSAGE = "{{first_message}}"
+
+# Test values, used only by the "Preview" button on elevenlabs.io
+INTERVIEW_VOICE_PLACEHOLDERS = {
+    "first_message": "Hi Sofia, thanks for joining. Tell me a bit about yourself.",
+    "candidate_name": "Sofia",
+    "job_title": "Data Scientist",
+    "company": "Schibsted",
+    "questions": "1. Tell me a bit about yourself.\n2. Tell me about a project you are proud of.\n3. Why Schibsted?",
+}

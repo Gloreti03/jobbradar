@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowLeft, CircleHelp, ExternalLink, FileText, Loader2, MapPin, Minus, Plus, Sparkles } from "lucide-react";
-import { api, qk } from "@/api";
+import { api, qk, USE_MOCKS } from "@/api";
 import { Button } from "@/components/ui/button";
 import { useProfileQuery } from "@/components/radar/AppShell";
 import { ErrorState, LanguageBadges, LoadingState, Panel, Points, PostedDate, ScoreRing, StatusBadge, VerdictBadge, formatDate } from "@/components/radar/shared";
@@ -23,6 +23,8 @@ function JobPage() {
   const id = Number(Route.useParams().id);
   const q = useQuery({ queryKey: qk.job(id), queryFn: () => api.getJob(id) });
   const profile = useProfileQuery();
+  // The tracker is authoritative: older job endpoints can return stale fixture references.
+  const applications = useQuery({ queryKey: qk.applications, queryFn: api.listApplications });
   const qc = useQueryClient();
   const navigate = useNavigate();
   const create = useMutation({
@@ -39,7 +41,9 @@ function JobPage() {
 
   if (q.isPending) return <LoadingState label="Loading job…" />;
   if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
-  const { job, match, application } = q.data;
+  const { job, match } = q.data;
+  const application = applications.data?.find((a) => a.job_id === job.id && a.job.title === job.title && a.job.company === job.company);
+  const demoJobOnLiveApi = !USE_MOCKS && job.source === "fixture";
 
   return (
     <div>
@@ -74,7 +78,9 @@ function JobPage() {
 
         <div className="space-y-6">
           <Panel title="Next step" className="border-primary/30">
-            {application ? (
+            {applications.isPending ? <LoadingState label="Checking your applications…" /> : applications.isError ? (
+              <ErrorState error={applications.error} onRetry={() => applications.refetch()} />
+            ) : application ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span>You have an application for this job</span>
@@ -89,7 +95,8 @@ function JobPage() {
             ) : (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">Create a tailored CV and cover letter for this job, using only facts from your profile.</p>
-                <Button size="lg" className="w-full" disabled={create.isPending || !profile.isSuccess} onClick={() => create.mutate()}>
+                {demoJobOnLiveApi && <p role="alert" className="rounded-md bg-warning-soft p-3 text-sm text-warning-foreground">This is a sample posting. Choose a verified live posting to prepare a real application.</p>}
+                <Button size="lg" className="w-full" disabled={create.isPending || !profile.isSuccess || demoJobOnLiveApi} onClick={() => create.mutate()}>
                   {create.isPending ? <><Loader2 className="animate-spin" /> Drafting documents…</> : <><Sparkles /> Create application</>}
                 </Button>
                 {!profile.isSuccess && !profile.isPending && <p className="text-xs text-muted-foreground">Create your profile first.</p>}

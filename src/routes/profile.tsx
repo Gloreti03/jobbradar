@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useProfileQuery } from "@/components/radar/AppShell";
 import { ErrorState, LoadingState, PageHeader, Panel, formatDate } from "@/components/radar/shared";
+import { DISCOVERY_QUESTIONS, mergeAttachments, splitProfileMaterial } from "@/lib/profile-material";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -71,9 +72,25 @@ function UploadScreen({ firstUse, onDone }: { firstUse?: boolean; onDone?: () =>
 
           <div>
             <Label>Additional documents (optional)</Label>
-            <p className="mb-2 text-xs text-muted-foreground">Certificates, transcripts, references…</p>
-            <Input type="file" multiple onChange={(e) => setExtra(Array.from(e.target.files ?? []))} />
-            {extra.length > 0 && <p className="mt-1 text-xs text-muted-foreground">{extra.length} file(s) selected</p>}
+            <p className="mb-2 text-xs text-muted-foreground">Add certificates, transcripts or projects together or one at a time. PDF, TXT or MD; up to 10 MB per file.</p>
+            <Input aria-label="Add additional documents" type="file" multiple accept=".pdf,.txt,.md" disabled={m.isPending} onChange={(e) => {
+              const incoming = Array.from(e.target.files ?? []);
+              const valid = incoming.filter((f) => {
+                if (!/\.(pdf|txt|md)$/i.test(f.name) || f.size > 10 * 1024 * 1024) {
+                  toast.error(`${f.name}: choose a PDF, TXT or MD file up to 10 MB.`);
+                  return false;
+                }
+                return true;
+              });
+              setExtra((previous) => mergeAttachments(previous, valid));
+              e.target.value = "";
+            }} />
+            {extra.length > 0 && <ul className="mt-2 space-y-1">
+              {extra.map((file, i) => <li key={`${file.name}-${file.lastModified}-${file.size}`} className="flex items-center justify-between gap-2 rounded-md bg-muted px-3 py-1 text-sm">
+                <span className="min-w-0 truncate">{file.name}</span>
+                <Button variant="ghost" size="icon" disabled={m.isPending} aria-label={`Remove ${file.name}`} onClick={() => setExtra((previous) => previous.filter((_, j) => j !== i))}><X /></Button>
+              </li>)}
+            </ul>}
           </div>
 
           <div>
@@ -126,17 +143,19 @@ const SENIORITY = ["intern", "junior", "mid", "senior"];
 function ProfileEditor({ data }: { data: ProfileOut }) {
   const qc = useQueryClient();
   const [p, setP] = useState<Profile>(data.profile);
-  const [extraText, setExtraText] = useState(data.extra_text);
+  const material = splitProfileMaterial(data.extra_text);
+  const [extraText, setExtraText] = useState(material.notes);
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [discovery, setDiscovery] = useState<Record<number, string>>({});
   const [reupload, setReupload] = useState(false);
   useEffect(() => {
     setP(data.profile);
-    setExtraText(data.extra_text);
+    setExtraText(splitProfileMaterial(data.extra_text).notes);
   }, [data]);
 
   const set = <K extends keyof Profile>(k: K, v: Profile[K]) => setP((x) => ({ ...x, [k]: v }));
   const setPref = <K extends keyof Profile["preferences"]>(k: K, v: Profile["preferences"][K]) => setP((x) => ({ ...x, preferences: { ...x.preferences, [k]: v } }));
-  const dirty = JSON.stringify(p) !== JSON.stringify(data.profile) || extraText !== data.extra_text || Object.values(answers).some(Boolean);
+  const dirty = JSON.stringify(p) !== JSON.stringify(data.profile) || extraText !== material.notes || Object.values(answers).some(Boolean) || Object.values(discovery).some(Boolean);
 
   const save = useMutation({
     mutationFn: () => {
@@ -144,12 +163,14 @@ function ProfileEditor({ data }: { data: ProfileOut }) {
         .map((q, i) => (answers[i]?.trim() ? `Q: ${q}\nA: ${answers[i].trim()}` : null))
         .filter(Boolean) as string[];
       const missing = p.missing_info.filter((_, i) => !answers[i]?.trim());
-      const text = [extraText, ...answered].filter(Boolean).join("\n\n");
+      const discoveryAnswers = DISCOVERY_QUESTIONS.map((q, i) => discovery[i]?.trim() ? `Q: ${q}\nA: ${discovery[i].trim()}` : "");
+      const text = [extraText, ...answered, ...discoveryAnswers, material.documents].filter(Boolean).join("\n\n");
       return api.updateProfile({ profile: { ...p, missing_info: missing }, extra_text: text });
     },
     onSuccess: (d) => {
       qc.setQueryData(qk.profile, d);
       setAnswers({});
+      setDiscovery({});
       toast.success("Profile saved");
     },
     onError: (e) => toast.error(`Couldn't save: ${e.message}`),
@@ -191,6 +212,16 @@ function ProfileEditor({ data }: { data: ProfileOut }) {
           </div>
         </Panel>
       )}
+
+      <Panel className="mb-6" title="Explore directions you might not have considered" icon={<Sparkles className="size-4 text-primary" />}>
+        <p className="mb-4 text-sm text-muted-foreground">Tell us what you enjoy doing, even if you do not know the job title. Your answers are saved as additional context; they do not add unverified skills to your CV.</p>
+        <div className="space-y-4">
+          {DISCOVERY_QUESTIONS.map((question, i) => <div key={question}>
+            <Label htmlFor={`discovery-${i}`}>{question}</Label>
+            <Textarea id={`discovery-${i}`} className="mt-1.5" rows={2} placeholder="A concrete example is helpful…" value={discovery[i] ?? ""} onChange={(e) => setDiscovery((previous) => ({ ...previous, [i]: e.target.value }))} />
+          </div>)}
+        </div>
+      </Panel>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
@@ -304,6 +335,11 @@ function ProfileEditor({ data }: { data: ProfileOut }) {
 
           <Panel title="Additional information">
             <Textarea rows={4} value={extraText} onChange={(e) => setExtraText(e.target.value)} placeholder="Extra context for matching and applications" />
+            {material.documents && <details className="mt-3">
+              <summary className="cursor-pointer text-sm font-medium">Imported document text</summary>
+              <p className="my-2 text-xs text-muted-foreground">Check that this text is readable before relying on it. If it is garbled, paste the correct information into your notes and ask for the document to be reprocessed.</p>
+              <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted p-2 text-xs">{material.documents}</pre>
+            </details>}
           </Panel>
 
           <Panel title="Search terms">

@@ -162,31 +162,55 @@ def _clean(turn: VoiceTurn) -> str:
     return text
 
 
+_STOPWORDS = {"that", "this", "with", "your", "what", "which", "about", "would", "have", "from", "there",
+              "they", "were", "been", "into", "when", "where", "while", "could", "should", "tell", "more"}
+QUESTION_MATCH_MIN = 0.35  # share of a plan question's words that an interviewer message must contain
+CLOSING_MARK = "that's all from my side"
+
+
+def _words(text: str) -> set[str]:
+    return {w for w in re.findall(r"[a-zæøå0-9]+", text.lower()) if len(w) >= 4 and w not in _STOPWORDS}
+
+
+def _asked_question(text: str, plan: list[InterviewQuestion], index: int) -> int:
+    """Index of the plan question an interviewer message asks, or the current index if it only
+    acknowledges / asks to complete the current answer. Only moves forward."""
+    said = _words(text)
+    best, best_score = index, 0.0
+    for i in range(index, len(plan)):
+        q = _words(plan[i].question)
+        score = len(q & said) / len(q) if q else 0.0
+        if score > best_score:
+            best, best_score = i, score
+    return best if best > index and best_score >= QUESTION_MATCH_MIN else index
+
+
 def _assign_questions(turns: list[VoiceTurn], plan: list[InterviewQuestion]) -> list[TranscriptTurn]:
     """Voice call messages -> transcript with question ids.
-    The agent asks the plan questions in order: each candidate answer belongs to the current
-    question; the next interviewer message moves to the following one. Consecutive candidate
-    messages (the speech recogniser splits long answers) are merged into one answer.
+    Each candidate answer belongs to the current question. An interviewer message moves to the next
+    question only if it actually asks a later plan question (word overlap): acknowledgements and
+    "could you complete your answer?" follow-ups stay on the current one, so a clarification never
+    shifts the answers. The closing line ends the interview. Consecutive candidate messages (the
+    speech recogniser splits long answers) are merged into one answer.
     Expressive tags like "[enthusiastic]" are removed from the interviewer's messages."""
     out: list[TranscriptTurn] = []
-    index = 0  # current question (0-based)
-    answered_current = False
+    index = 0  # current question (0-based); len(plan) = interview closed
     for turn in turns:
         text = _clean(turn)
         if not text:
             continue
         if turn.role == "candidate":
             if index >= len(plan):
-                continue  # talking after the last question: not part of the interview
+                continue  # talking after the closing line: not part of the interview
             if out and out[-1].role == "candidate":
                 out[-1] = out[-1].model_copy(update={"content": f"{out[-1].content} {text}"})
             else:
                 out.append(TranscriptTurn(role="candidate", content=text, question_id=plan[index].id))
-            answered_current = True
         else:
-            if answered_current:
-                index += 1
-                answered_current = False
+            if CLOSING_MARK in text.lower().replace("’", "'"):
+                index = len(plan)
+            elif index < len(plan):
+                index = _asked_question(text, plan, index)
             qid = plan[index].id if index < len(plan) else None
             out.append(TranscriptTurn(role="interviewer", content=text, question_id=qid))
     return out

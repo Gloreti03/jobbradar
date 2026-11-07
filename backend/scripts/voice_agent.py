@@ -54,7 +54,9 @@ def main() -> None:
                 # push-to-talk in the frontend: the mic stays muted until the candidate presses
                 # "Start answer", so the agent must wait in silence instead of re-prompting after 7 s,
                 # and must not cut the candidate off during short pauses
-                "turn": {"turn_timeout": TURN_TIMEOUT_S, "turn_eagerness": "patient"},
+                # speculative_turn off: the agent must not start its reply before the answer is over
+                # (it replied to the first half of an answer and ignored the rest)
+                "turn": {"turn_timeout": TURN_TIMEOUT_S, "turn_eagerness": "patient", "speculative_turn": False},
                 "conversation": {"max_duration_seconds": MAX_CALL_S},
             },
             "platform_settings": {"auth": {"enable_auth": True}},
@@ -75,7 +77,8 @@ def main() -> None:
     print("Variables:     ", list((agent.get("dynamic_variables") or {}).get("dynamic_variable_placeholders", {})))
     print("Auth enabled:  ", data.get("platform_settings", {}).get("auth", {}).get("enable_auth"))
     turn = data.get("conversation_config", {}).get("turn", {})
-    print("Turn:          ", f"timeout {turn.get('turn_timeout')} s, eagerness {turn.get('turn_eagerness')}")
+    print("Turn:          ", f"timeout {turn.get('turn_timeout')} s, eagerness {turn.get('turn_eagerness')}, "
+          f"speculative {turn.get('speculative_turn')}")
     print("Max duration:  ", data.get("conversation_config", {}).get("conversation", {}).get("max_duration_seconds"), "s")
     print("Prompt start:  ", (agent.get("prompt") or {}).get("prompt", "")[:80].replace("\n", " "), "...")
 

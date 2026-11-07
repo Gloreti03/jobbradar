@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "RADAR – Save job",
+  "name": "JobbRadar – Save job",
   "version": "0.1.0",
-  "description": "Save the job ad on this page to RADAR and open it in the app.",
+  "description": "Save the job ad on this page to JobbRadar and open it in the app.",
   "action": {
-    "default_title": "Save this job to RADAR",
+    "default_title": "Save this job to JobbRadar",
     "default_popup": "popup.html"
   },
   "permissions": ["activeTab", "scripting", "storage"],

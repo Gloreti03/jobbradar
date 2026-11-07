@@ -1,4 +1,4 @@
-# RADAR
+# JobbRadar
 
 Web app + browser extension for people job hunting in Oslo. The whole project is described in [BLUEPRINT.md](BLUEPRINT.md) (in Italian).
 

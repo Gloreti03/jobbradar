@@ -1,4 +1,4 @@
-// RADAR extension popup: reads the job ad on the current tab (JSON-LD JobPosting if present,
+// JobbRadar extension popup: reads the job ad on the current tab (JSON-LD JobPosting if present,
 // otherwise the visible text), sends it to POST /jobs/import on our backend and opens the
 // job page in the frontend. The extension talks ONLY to our backend (BLUEPRINT sec. 8).
 
@@ -103,7 +103,7 @@ async function init() {
 async function save() {
   if (!captured) return;
   $("save").disabled = true;
-  setStatus("Saving to RADAR…");
+  setStatus("Saving to JobbRadar…");
   const api = $("api").value.replace(/\/+$/, "");
   const app = $("app").value.replace(/\/+$/, "");
   try {
@@ -114,7 +114,7 @@ async function save() {
     });
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) throw new Error(data.error || `Backend error ${resp.status}`);
-    setStatus(data.created ? "Saved! Opening RADAR…" : "Already in RADAR. Opening…", "ok");
+    setStatus(data.created ? "Saved! Opening JobbRadar…" : "Already in JobbRadar. Opening…", "ok");
     chrome.tabs.create({ url: JOB_PAGE(app, data.job_id) });
   } catch (err) {
     const msg = err instanceof TypeError ? `Backend not reachable at ${api}` : err.message;

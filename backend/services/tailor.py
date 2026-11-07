@@ -94,7 +94,7 @@ def tailor(profile: Profile, job: JobOut, extra_text: str = "") -> tuple[DocLang
         description=(job.description or "(no description available)")[:MAX_DESCRIPTION_CHARS],
     )
     # modello veloce: ~15 s contro ~60-100 s di quello smart, stessa qualità nei test (BLUEPRINT: < 30 s)
-    out = complete_json("fast", system, user, TailorOutput, temperature=0.4, max_tokens=8000)
+    out = complete_json("fast", system, user, TailorOutput, temperature=0.2, max_tokens=8000)
     out.cv, removed = enforce_facts(out.cv, profile)
     if removed:
         out.notes.changes.append("Removed items not found in your profile: " + "; ".join(removed))

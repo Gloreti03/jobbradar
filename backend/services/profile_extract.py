@@ -183,19 +183,19 @@ def pdf_to_text(data: bytes) -> str:
 
 _MONTHS = (r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|gen|mag|giu|lug|ago|set|ott|dic|mai|okt|des)"
            r"[a-zæøå]*\.?")
-# 19/10/2002, 19.10.2002, 3 April 2003, 3April2003, April 3, 2003
+# 01/02/2000, 01.02.2000, 1 February 2000, 1February2000, February 1, 2000
 _DATE = rf"(\d{{1,2}}[/.-]\d{{1,2}}[/.-]\d{{2,4}}|\d{{1,2}}\s*{_MONTHS}\s*\d{{4}}|{_MONTHS}\s*\d{{1,2}},?\s*\d{{4}})"
 
 _SENSITIVE_PATTERNS = [
     # Italian codice fiscale (also when preceded by its label)
     (re.compile(r"(?i)(codice\s+fiscale\s*:?\s*)?\b[A-Z]{6}\d{2}[A-EHLMPR-T]\d{2}[A-Z]\d{3}[A-Z]\b"), "[tax id removed]"),
     # place + date of birth, Italian and English, also with OCR-joined words:
-    # "nato a ROMA (RM), ITALIA il 19/10/2002", "born inPESARO(PU)on3April 2003", "born in Oslo on 3 April 2003"
+    # "nato a CITTÀ (XX), ITALIA il 01/02/2000", "born inCITY(XX)on1February 2000", "born in Oslo on 1 February 2000"
     (re.compile(rf"(?i)\bnat[oa]\s*a\s*[^\n]{{1,80}}?\bil\s*{_DATE}"), "[birth data removed]"),
     (re.compile(rf"(?i)\bborn\s*in\s*[^\n]{{1,80}}?\bon\s*{_DATE}"), "[birth data removed]"),
     (re.compile(rf"(?i)\b(born(\s*on)?|date\s*of\s*birth|birth\s*date|data\s*di\s*nascita|fødselsdato)\s*:?\s*{_DATE}"),
      "[birth date removed]"),
-    # student ID numbers ("Student Identification No.: 821311", "matricola 1984715", "Studentnummer 123456")
+    # student ID numbers ("Student Identification No.: 000000", "matricola 0000000", "Studentnummer 123456")
     (re.compile(r"(?i)\b(matricola|student\s*(identification|id)?\s*(no\.?|number|n\.)?|studentnummer)\s*:?\s*[A-Z]?\d{4,}\b"),
      "[student id removed]"),
     # IBAN and Norwegian national identity number (11 digits)

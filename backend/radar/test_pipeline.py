@@ -1,5 +1,8 @@
 """Regression checks. From backend/: uv run python -m unittest radar.test_pipeline"""
 
+import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
@@ -16,7 +19,7 @@ from radar.filters import filter_jobs
 from radar.providers.base import NormalizedJob, ScanConfig, canonical_url
 from radar.providers.nav import NavProvider
 from radar.scanner import dump_seed, load_seed, save_jobs
-from schemas import JobOut, Profile
+from schemas import JobOut, Preferences, Profile
 
 
 class SeedTests(unittest.TestCase):
@@ -96,6 +99,78 @@ class FeedTests(unittest.IsolatedAsyncioTestCase):
         unknown = recent.model_copy(update={"id": 3, "url": "https://example.org/3", "posted_at": None})
         result = filter_jobs([unknown, old, recent], Profile(name="Test"), 7, False, now)
         self.assertEqual([job.id for job in result], [1, 3])
+
+
+class TitleFilterTests(unittest.TestCase):
+    def setUp(self):
+        self.now = datetime.now(timezone.utc)
+        self.profile = Profile(name="Backend regression", preferences=Preferences(
+            roles=["Backend Developer"], cities=["Oslo"], seniority="junior"),
+            search_terms=["backend developer", "software developer", "Python", "FastAPI", "SQL"])
+
+    def job(self, job_id, title, **changes):
+        values = dict(id=job_id, source="nav", source_id=str(job_id), title=title,
+                      company=f"Company {job_id}", location="Oslo", url=f"https://example.org/{job_id}",
+                      posted_at=self.now - timedelta(days=1), discovered_at=self.now,
+                      language="en", norwegian_required=False)
+        values.update(changes)
+        return JobOut(**values)
+
+    def selected(self, jobs, profile=None):
+        return filter_jobs(jobs, profile or self.profile, 7, True, self.now)
+
+    def test_reported_backend_titles_reach_ranking_for_junior_profile(self):
+        jobs = [self.job(353, "Senior Software Engineer - Backend, Knowledge Graph"),
+                self.job(195, "Senior Backend Engineer – build payment infrastructure at Dintero")]
+        self.assertEqual({job.id for job in self.selected(jobs)}, {353, 195})
+
+    def test_word_order_punctuation_and_compound_titles(self):
+        titles = ["Backend Software Engineer", "Back-end Engineer", "Back‑end Engineer", "Backendutvikler",
+                  "Software Engineer (Backend)", "Senior Backend Engineer"]
+        jobs = [self.job(index, title) for index, title in enumerate(titles)]
+        self.assertEqual(len(self.selected(jobs)), len(titles))
+
+    def test_description_supplies_missing_title_context(self):
+        job = self.job(1, "Platform Specialist", description="Build backend developer tooling with Python and FastAPI.")
+        self.assertEqual([row.id for row in self.selected([job])], [1])
+
+    def test_explicit_negative_terms_still_exclude_senior_titles(self):
+        profile = self.profile.model_copy(update={"search_terms": self.profile.search_terms + ["  -Senior  "]})
+        jobs = [self.job(1, "Senior Backend Engineer"), self.job(2, "Backend Engineer")]
+        self.assertEqual([job.id for job in self.selected(jobs, profile)], [2])
+
+    def test_short_keywords_do_not_match_inside_unrelated_words(self):
+        profile = Profile(name="ML regression", search_terms=["ML", "R", ".NET"])
+        jobs = [self.job(1, "HTML Designer"), self.job(2, "Network Operator"),
+                self.job(3, "ML Engineer"), self.job(4, "C#/.NET Developer")]
+        self.assertEqual({job.id for job in self.selected(jobs, profile)}, {3, 4})
+
+    def test_seniority_alone_does_not_select_unrelated_roles(self):
+        profile = self.profile.model_copy(update={"search_terms": ["junior", "backend developer"]})
+        jobs = [self.job(1, "Junior Accountant"), self.job(2, "Senior Backend Engineer")]
+        self.assertEqual([job.id for job in self.selected(jobs, profile)], [2])
+
+
+class DateTimezoneTests(unittest.TestCase):
+    def test_oslo_dates_use_bundled_timezone_data_when_system_data_is_absent(self):
+        code = """
+from datetime import datetime, timezone
+from zoneinfo import TZPATH
+from radar.providers.base import parse_date
+
+assert not TZPATH
+assert parse_date('2026-11-07T10:00:00') == datetime(2026, 11, 7, 9, tzinfo=timezone.utc)
+assert parse_date('2026-07-07T10:00:00') == datetime(2026, 7, 7, 8, tzinfo=timezone.utc)
+assert parse_date('2026-11-07T10:00:00+02:00') == datetime(2026, 11, 7, 8, tzinfo=timezone.utc)
+assert parse_date('2026-11-07T10:00:00Z') == datetime(2026, 11, 7, 10, tzinfo=timezone.utc)
+assert parse_date('invalid') is None
+assert parse_date(None) is None
+"""
+        result = subprocess.run(
+            [sys.executable, "-c", code], cwd=Path(__file__).resolve().parents[1],
+            env={**os.environ, "PYTHONTZPATH": ""}, capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

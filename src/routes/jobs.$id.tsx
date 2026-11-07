@@ -23,8 +23,6 @@ function JobPage() {
   const id = Number(Route.useParams().id);
   const q = useQuery({ queryKey: qk.job(id), queryFn: () => api.getJob(id) });
   const profile = useProfileQuery();
-  // The tracker is authoritative: older job endpoints can return stale fixture references.
-  const applications = useQuery({ queryKey: qk.applications, queryFn: api.listApplications });
   const qc = useQueryClient();
   const navigate = useNavigate();
   const create = useMutation({
@@ -41,8 +39,7 @@ function JobPage() {
 
   if (q.isPending) return <LoadingState label="Loading job…" />;
   if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
-  const { job, match } = q.data;
-  const application = applications.data?.find((a) => a.job_id === job.id && a.job.title === job.title && a.job.company === job.company);
+  const { job, match, application } = q.data;
   const demoJobOnLiveApi = !USE_MOCKS && job.source === "fixture";
 
   return (
@@ -79,9 +76,7 @@ function JobPage() {
 
         <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
           <Panel title="Next step" className="border-primary/30">
-            {applications.isPending ? <LoadingState label="Checking your applications…" /> : applications.isError ? (
-              <ErrorState error={applications.error} onRetry={() => applications.refetch()} />
-            ) : application ? (
+            {application ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span>You have an application for this job</span>

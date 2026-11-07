@@ -1,6 +1,6 @@
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpRight, Briefcase, Check, ChevronRight, FlaskConical, Globe2, Lock, Radar as RadarIcon, UserRound } from "lucide-react";
+import { Briefcase, Check, ChevronRight, FlaskConical, Lock, Radar as RadarIcon, UserRound } from "lucide-react";
 import type { ReactNode } from "react";
 import { api, demo, qk, USE_MOCKS, API_URL } from "@/api";
 import { RadarGlyph } from "./shared";
@@ -27,6 +27,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const name = profile.data?.profile.name;
   const initials = name?.split(/\s+/).slice(0, 2).map((n) => n[0]).join("") || "R";
   const page = pathname.startsWith("/profile") ? "Your profile" : pathname.startsWith("/radar") ? "Discover opportunities" : pathname.startsWith("/jobs") ? "Opportunity details" : pathname.startsWith("/interview") ? "Interview practice" : "Your applications";
+  const activeStep = pathname.startsWith("/profile") ? "profile" : pathname.startsWith("/radar") || pathname.startsWith("/jobs") ? "discover" : "apply";
   const switchDemo = (state: "empty" | "populated") => {
     demo.setProfileState(state);
     qc.clear();
@@ -41,7 +42,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <RadarGlyph className="size-10" />
           <div><span className="brand-name">jobbradar<span className="text-sidebar-primary">.</span></span><span className="brand-caption">A little direction. A bigger future.</span></div>
         </Link>
-        <div className="sidebar-location"><Globe2 className="size-3.5" /><span>OSLO WORKSPACE</span><span className="status-dot" /></div>
+        <div className="sidebar-location"><span>SEARCH AREA</span><strong>Oslo, Norway</strong></div>
         <div className="sidebar-section-label">YOUR NEXT CHAPTER</div>
         <nav aria-label="Main navigation" className="workspace-navigation">
           <NavItem to="/profile" icon={<UserRound />} label="Your profile" number="01" />
@@ -51,7 +52,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="sidebar-journey">
           <div className="sidebar-section-label">FROM POTENTIAL TO POSSIBILITY</div>
           <p>work that<br /><span>feels like you.</span></p>
-          <div className="journey-track" aria-hidden="true"><span /><span /><span /><ArrowUpRight className="size-4" /></div>
+          <nav className="journey-steps" aria-label="Your job search steps">
+            <Link to="/profile" className={activeStep === "profile" ? "current-step" : ""}><span>01</span>Profile</Link>
+            <Link to="/radar" className={activeStep === "discover" ? "current-step" : ""}><span>02</span>Discover</Link>
+            <Link to="/applications" className={activeStep === "apply" ? "current-step" : ""}><span>03</span>Apply</Link>
+          </nav>
           <span className="text-xs text-sidebar-foreground/60">Know yourself. Find your fit. Go for it.</span>
         </div>
         <div className="sidebar-footer">
@@ -72,8 +77,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
       <div className="workspace-body">
         <header className="workspace-topbar no-print">
-          <div className="flex min-w-0 items-center gap-2 text-sm"><span className="hidden text-muted-foreground sm:inline">Workspace</span><ChevronRight className="hidden size-3 text-muted-foreground sm:block" /><span className="truncate font-medium">{page}</span></div>
-          <div className="flex items-center gap-4"><span className="topbar-location"><span className="status-dot" /> Oslo, Norway</span><span className="topbar-avatar" aria-label={name || "Your profile"}>{initials}</span></div>
+          <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-sm"><Link to="/radar" className="hidden text-muted-foreground underline-offset-4 hover:text-primary hover:underline sm:inline">Workspace</Link><ChevronRight aria-hidden="true" className="hidden size-3 text-muted-foreground sm:block" /><span aria-current="page" className="truncate font-medium">{page}</span></nav>
+          <div className="flex items-center gap-4"><span className="topbar-location">Search area: Oslo</span><Link to="/profile" className="topbar-avatar" aria-label="Open your profile" title={name ? `View ${name}'s profile` : "View your profile"}>{initials}</Link></div>
         </header>
         <main id="workspace-content" className="workspace-content"><div className="page-enter">{children}</div></main>
       </div>

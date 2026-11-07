@@ -62,7 +62,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Reset the demo database")
     parser.add_argument("--cv", type=Path, help="CV PDF (default: the only PDF in demo/)")
     parser.add_argument("--scan", action="store_true", help="fresh scan of the sources instead of the seed")
-    parser.add_argument("--days", type=int, default=7, choices=[3, 7, 14, 30], help="Radar window for the warm-up run")
+    # demo story: "we widen the search to 30 days" -> the best match (Schibsted Data Scientist) is from mid-October
+    parser.add_argument("--days", type=int, default=30, choices=[3, 7, 14, 30], help="Radar window for the warm-up run")
     args = parser.parse_args()
     cv = find_cv(args.cv)
 

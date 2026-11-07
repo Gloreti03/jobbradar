@@ -131,8 +131,10 @@ def extract_profile(cv_text: str, extra_text: str = "") -> Profile:
         cv_text=cv_text[:MAX_CV_CHARS] or "(no CV text: use the extra material)",
         extra_text=extra_text[:MAX_EXTRA_CHARS] or "(none)",
     )
-    # fast model: the smart one takes ~45 s even on a one-page CV (BLUEPRINT: < 30 s)
-    profile = complete_json("fast", PROFILE_EXTRACT_SYSTEM, user, Profile, temperature=0.1, max_tokens=8000)
+    # fast model without hidden reasoning: ~8 s vs ~30-40 s with it, same quality in tests (BLUEPRINT: < 30 s)
+    profile = complete_json(
+        "fast", PROFILE_EXTRACT_SYSTEM, user, Profile, temperature=0.1, max_tokens=8000, reasoning_effort="none"
+    )
     profile.search_terms = _dedupe(profile.search_terms)[:MAX_SEARCH_TERMS]
     profile.missing_info = _dedupe(profile.missing_info)[:MAX_MISSING_INFO]
     profile.skills = _dedupe(profile.skills)
@@ -150,7 +152,9 @@ def apply_answers(profile: Profile, answers: list[MissingInfoAnswer]) -> Profile
         profile_json=json.dumps(profile.model_dump(mode="json"), ensure_ascii=False),
         answers=format_answers(answers),
     )
-    updated = complete_json("fast", PROFILE_ANSWERS_SYSTEM, user, Profile, temperature=0.1, max_tokens=8000)
+    updated = complete_json(
+        "fast", PROFILE_ANSWERS_SYSTEM, user, Profile, temperature=0.1, max_tokens=8000, reasoning_effort="none"
+    )
     # identity and question list are never left to the model
     updated.name = profile.name
     updated.contacts = profile.contacts

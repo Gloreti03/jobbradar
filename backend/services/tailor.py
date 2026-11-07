@@ -10,6 +10,7 @@ Safety nets in code, on top of the prompt rules:
 """
 
 import json
+from datetime import date
 import logging
 import re
 from typing import Any
@@ -23,6 +24,7 @@ log = logging.getLogger("tailor")
 MAX_DESCRIPTION_CHARS = 12_000
 MAX_MISSING_REQUIREMENTS = 6  # more than this does not fit on a card
 MIN_WORD_OVERLAP = 0.85  # share of a quote's words that must appear in the material
+REASONING_EFFORT = "none"  # no hidden reasoning: ~2x faster (BLUEPRINT: < 30 s)
 NORWEGIAN_OK_LEVELS = {"native", "c2", "c1", "b2"}
 NORWEGIAN_NAMES = {"norwegian", "norsk", "bokmål", "bokmal", "nynorsk"}
 
@@ -41,9 +43,9 @@ class TailorOutput(Schema):
 
 
 def _normalize(text: str) -> str:
-    text = text.lower().replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
-    text = re.sub(r"[–—]", "-", text)
-    return re.sub(r"\s+", " ", text).strip(" .,;:")
+    """Lowercase, punctuation-insensitive: "English: C1" and "English (C1)" both -> "english c1"."""
+    text = re.sub(r"[^\w]+", " ", text.lower())
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def _strings(value: Any) -> list[str]:
@@ -64,9 +66,9 @@ def candidate_corpus(profile: Profile, extra_text: str) -> str:
 def is_grounded(quote: str, corpus: str, corpus_words: set[str]) -> bool:
     """True if the quote is literally in the material (or nearly: >= 85% of its words, min 3 words)."""
     q = _normalize(quote)
-    if len(q) < 3:
+    if len(q) < 2:
         return False
-    if q in corpus:
+    if f" {q} " in f" {corpus} ":  # whole words only: "Java" must not match "JavaScript"
         return True
     words = [w for w in re.findall(r"[^\W_]+", q) if len(w) >= 3]
     if len(words) < 3:
@@ -89,6 +91,38 @@ def verify_requirement_map(
         status = item.status if evidence else "missing"
         verified.append(item.model_copy(update={"evidence": evidence if status != "missing" else [], "status": status}))
     return verified, dropped
+
+
+def _month(value: str | None, end: bool = False) -> str | None:
+    """'2026' -> '2026-01' (or '2026-12' for an end date), '2026-08' stays; anything else -> None."""
+    if not value:
+        return None
+    m = re.match(r"(\d{4})(?:-(\d{2}))?", value)
+    if not m:
+        return None
+    return f"{m.group(1)}-{m.group(2) or ('12' if end else '01')}"
+
+
+def timing(start: str | None, end: str | None, today: date) -> str:
+    """'ongoing' | 'completed' | 'upcoming' | 'unknown', computed in code so the tense is always right."""
+    now = today.strftime("%Y-%m")
+    s, e = _month(start), _month(end, end=True)
+    if s and s > now:
+        return "upcoming"
+    if e and e < now:
+        return "completed"
+    if s or e:
+        return "ongoing"
+    return "unknown"
+
+
+def profile_for_prompt(profile: Profile, today: date) -> dict[str, Any]:
+    """Profile dict for the model, with a computed `timing` on every experience and education entry."""
+    data = profile.model_dump(mode="json", exclude={"search_terms", "missing_info"})
+    for key in ("experiences", "education"):
+        for item in data.get(key, []):
+            item["timing"] = timing(item.get("start_date"), item.get("end_date"), today)
+    return data
 
 
 def missing_from_map(items: list[RequirementMatch]) -> list[str]:
@@ -156,14 +190,18 @@ def enforce_facts(cv: TailoredCV, profile: Profile) -> tuple[TailoredCV, list[st
     return cv, removed
 
 
-def tailor(profile: Profile, job: JobOut, extra_text: str = "") -> tuple[DocLanguage, TailoredCV, str, ApplicationNotes]:
+def tailor(
+    profile: Profile, job: JobOut, extra_text: str = "", reasoning_effort: str | None = REASONING_EFFORT
+) -> tuple[DocLanguage, TailoredCV, str, ApplicationNotes]:
     """-> (document language, tailored CV, cover letter, notes with the verified requirement map)."""
     language = choose_language(job, profile)
     system = TAILOR_SYSTEM.replace("{language}", language)
-    profile_json = json.dumps(profile.model_dump(exclude={"search_terms", "missing_info"}), ensure_ascii=False)
+    today = date.today()
+    profile_json = json.dumps(profile_for_prompt(profile, today), ensure_ascii=False)
     if extra_text.strip():
         profile_json += f"\n\nEXTRA MATERIAL FROM THE CANDIDATE (facts usable too):\n{extra_text[:5000]}"
     user = TAILOR_USER.format(
+        today=today.isoformat(),
         profile_json=profile_json,
         title=job.title,
         company=job.company or "(unknown)",
@@ -171,7 +209,9 @@ def tailor(profile: Profile, job: JobOut, extra_text: str = "") -> tuple[DocLang
         description=(job.description or "(no description available)")[:MAX_DESCRIPTION_CHARS],
     )
     # fast model: ~15-20 s vs ~60-100 s for the smart one, same quality in tests (BLUEPRINT: < 30 s)
-    out = complete_json("fast", system, user, TailorOutput, temperature=0.2, max_tokens=10000)
+    out = complete_json(
+        "fast", system, user, TailorOutput, temperature=0.2, max_tokens=10000, reasoning_effort=reasoning_effort
+    )
 
     requirement_map, dropped = verify_requirement_map(out.requirement_map, profile, extra_text)
     if dropped:

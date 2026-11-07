@@ -51,6 +51,38 @@ companies:
     source: teamtailor
     careers_url: https://norkart.teamtailor.com/
     board: norkart
+  - name: Spond
+    source: teamtailor
+    careers_url: https://careers.spond.com/
+    board: spond
+  - name: Itera
+    source: teamtailor
+    careers_url: https://careers.itera.com/
+    board: itera
+  - name: reMarkable
+    source: teamtailor
+    careers_url: https://jobs.remarkable.com/
+    board: remarkable
+  - name: People Made Machines
+    source: teamtailor
+    careers_url: https://peoplemademachines.teamtailor.com/
+    board: peoplemademachines
+  - name: Ardoq
+    source: teamtailor
+    careers_url: https://careers.ardoq.com/
+    board: ardoq
+  - name: Protector Forsikring Norge
+    source: teamtailor
+    careers_url: https://protectorforsikringnorge.teamtailor.com/
+    board: protectorforsikringnorge
+  - name: BearingPoint Norway
+    source: teamtailor
+    careers_url: https://nordiccareers.bearingpoint.com/
+    board: bearingpointnorway
+  - name: Monil
+    source: teamtailor
+    careers_url: https://careers.monil.com/
+    board: monil
   - name: Cognite
     source: greenhouse
     careers_url: https://job-boards.greenhouse.io/cognite

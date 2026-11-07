@@ -1,0 +1,28 @@
+# --- Segreti ---
+.env
+.env.*
+!.env.example
+
+# --- Python / uv ---
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# --- Database locale (ognuno ha il suo; si popola con scan.py --load-seed) ---
+*.db
+*.db-journal
+*.sqlite3
+
+# --- Node (estensione / eventuali tool) ---
+node_modules/
+
+# --- Editor / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

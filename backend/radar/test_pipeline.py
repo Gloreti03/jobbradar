@@ -1,5 +1,8 @@
 """Regression checks. From backend/: uv run python -m unittest radar.test_pipeline"""
 
+import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
@@ -146,6 +149,28 @@ class TitleFilterTests(unittest.TestCase):
         profile = self.profile.model_copy(update={"search_terms": ["junior", "backend developer"]})
         jobs = [self.job(1, "Junior Accountant"), self.job(2, "Senior Backend Engineer")]
         self.assertEqual([job.id for job in self.selected(jobs, profile)], [2])
+
+
+class DateTimezoneTests(unittest.TestCase):
+    def test_oslo_dates_use_bundled_timezone_data_when_system_data_is_absent(self):
+        code = """
+from datetime import datetime, timezone
+from zoneinfo import TZPATH
+from radar.providers.base import parse_date
+
+assert not TZPATH
+assert parse_date('2026-11-07T10:00:00') == datetime(2026, 11, 7, 9, tzinfo=timezone.utc)
+assert parse_date('2026-07-07T10:00:00') == datetime(2026, 7, 7, 8, tzinfo=timezone.utc)
+assert parse_date('2026-11-07T10:00:00+02:00') == datetime(2026, 11, 7, 8, tzinfo=timezone.utc)
+assert parse_date('2026-11-07T10:00:00Z') == datetime(2026, 11, 7, 10, tzinfo=timezone.utc)
+assert parse_date('invalid') is None
+assert parse_date(None) is None
+"""
+        result = subprocess.run(
+            [sys.executable, "-c", code], cwd=Path(__file__).resolve().parents[1],
+            env={**os.environ, "PYTHONTZPATH": ""}, capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

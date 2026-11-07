@@ -42,7 +42,7 @@ function RadarPage() {
     <div>
       <section className="scan-hero">
         <div className="scan-hero-copy">
-          <div className="eyebrow">a fresh perspective on your future</div>
+          <div className="eyebrow"><span className="hero-signal" /> YOUR NEXT MOVE STARTS HERE</div>
           <h1>your next<br /><em>big thing.</em></h1>
           <p>Good work starts with a good fit. Explore recent openings connected to your experience, interests and ambitions.</p>
           <button className="scan-launch" aria-label="Scan for jobs" disabled={scan.isPending} onClick={() => scan.mutate()}>
@@ -51,7 +51,8 @@ function RadarPage() {
             {!scan.isPending && <ArrowUpRight className="size-4" />}
           </button>
         </div>
-        <div className="scan-visual" aria-hidden="true"><RadarGlyph active={scan.isPending} /></div>
+        <div className="scan-visual" aria-hidden="true"><RadarGlyph active={scan.isPending} /><span className="orbit-cross orbit-cross-one">+</span><span className="orbit-cross orbit-cross-two">+</span><div className="signal-ticket"><span>LESS SCROLLING.</span><strong>more possibility ↗</strong></div></div>
+        <div className="hero-footnote" aria-hidden="true"><span>BUILT AROUND YOU</span><span>PROFILE → OPPORTUNITY → NEXT CHAPTER</span></div>
       </section>
 
       <section className="scan-filters" aria-label="Search preferences">

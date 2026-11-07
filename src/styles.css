@@ -73,20 +73,22 @@
 }
 
 :root {
+  --signal-lime: oklch(0.92 0.2 119);
+  --ink: oklch(0.21 0.015 265);
   --radius: 0.75rem;
-  --background: oklch(0.985 0.004 85);
-  --foreground: oklch(0.3 0.014 70);
-  --card: oklch(0.965 0.004 85);
-  --card-foreground: oklch(0.3 0.014 70);
+  --background: oklch(0.975 0.008 95);
+  --foreground: oklch(0.21 0.015 265);
+  --card: oklch(0.995 0.003 95);
+  --card-foreground: oklch(0.21 0.015 265);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.2 0.02 200);
-  --primary: oklch(0.46 0.18 25);
+  --primary: oklch(0.49 0.26 267);
   --primary-foreground: oklch(0.99 0.002 85);
-  --primary-soft: oklch(0.95 0.025 30);
+  --primary-soft: oklch(0.945 0.028 275);
   --secondary: oklch(0.93 0.007 85);
   --secondary-foreground: oklch(0.34 0.014 70);
   --muted: oklch(0.935 0.006 85);
-  --muted-foreground: oklch(0.47 0.012 70);
+  --muted-foreground: oklch(0.46 0.018 265);
   --accent: oklch(0.925 0.008 80);
   --accent-foreground: oklch(0.3 0.014 70);
   --destructive: oklch(0.58 0.2 27);
@@ -98,22 +100,22 @@
   --info-foreground: oklch(0.4 0.1 245);
   --border: oklch(0.89 0.006 85);
   --input: oklch(0.83 0.008 80);
-  --ring: oklch(0.46 0.18 25);
+  --ring: oklch(0.49 0.26 267);
   --chart-1: oklch(0.56 0.13 163);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.965 0.006 85);
+  --sidebar: oklch(0.975 0.008 95);
   --sidebar-foreground: oklch(0.36 0.014 70);
-  --sidebar-primary: oklch(0.46 0.18 25);
+  --sidebar-primary: oklch(0.49 0.26 267);
   --sidebar-primary-foreground: oklch(0.99 0.002 85);
   --sidebar-accent: oklch(0.92 0.008 80);
   --sidebar-accent-foreground: oklch(0.3 0.014 70);
   --sidebar-border: oklch(0.88 0.008 85);
-  --sidebar-ring: oklch(0.46 0.18 25);
+  --sidebar-ring: oklch(0.49 0.26 267);
   --shadow-card: none;
-  --shadow-glow: 0 5px 20px oklch(0.46 0.18 25 / 10%);
+  --shadow-glow: 0 5px 20px oklch(0.49 0.26 267 / 12%);
 }
 
 @layer base {
@@ -299,4 +301,80 @@ details > summary > svg:last-child { transition: transform 180ms; }
   .job-result-card h3 { font-size: 17px; }
   .profile-banner h2 { font-size: 18px; }
   .page-heading h1 { font-size: 29px; }
+}
+
+/* Electric paper: cobalt signal, acid-lime highlights, ink typography. */
+::selection { background: var(--signal-lime); color: var(--ink); }
+.workspace-sidebar { border-right-color: var(--border); }
+.workspace-brand { gap: 8px; }
+.workspace-brand .radar-glyph { --primary-soft: oklch(0.945 0.028 275); border-color: var(--primary); }
+.brand-name { letter-spacing: -1.8px; }
+.brand-caption { font-size: 8px; }
+.workspace-nav-link { border-radius: 10px; }
+.workspace-nav-link.is-active { background: var(--ink); border-color: var(--ink); color: oklch(0.99 0 0); box-shadow: 3px 3px 0 var(--signal-lime); }
+.workspace-nav-link.is-active .nav-index { color: var(--signal-lime); opacity: 1; }
+.sidebar-journey > p { font-size: 29px; letter-spacing: -1.8px; }
+.sidebar-journey > p > span { color: var(--primary); }
+.workspace-topbar { background: oklch(0.975 0.008 95 / 94%); }
+.person-avatar, .topbar-avatar { background: var(--signal-lime); color: var(--ink); }
+.radar-panel { border: 1px solid var(--border); border-radius: 15px; }
+.radar-panel input:not([type=file]), .radar-panel textarea { background: var(--background); }
+.scan-hero { min-height: 405px; padding: 42px 42px 62px; border-radius: 20px; background: var(--primary); color: oklch(0.99 0 0); }
+.scan-hero::before { background: repeating-linear-gradient(90deg, transparent 0, transparent calc(25% - 1px), oklch(1 0 0 / 6%) calc(25% - 1px), oklch(1 0 0 / 6%) 25%); }
+.scan-hero .eyebrow { color: oklch(0.98 0.01 270); font-size: 9px; letter-spacing: .11em; }
+.hero-signal { height: 7px; width: 7px; background: var(--signal-lime); border-radius: 50%; box-shadow: 0 0 0 4px oklch(0.92 0.2 119 / 15%); }
+.scan-hero h1 { margin: 25px 0 19px; font-size: clamp(48px, 5.7vw, 84px); letter-spacing: -4.5px; line-height: .96; }
+.scan-hero h1 em { color: var(--signal-lime); }
+.scan-hero-copy > p { color: oklch(0.96 0.015 270); max-width: 355px; }
+.scan-launch { color: var(--ink); background: var(--signal-lime); border: 1px solid var(--signal-lime); padding: 14px 23px; box-shadow: 3px 3px 0 oklch(0.2 0.06 270 / 35%); }
+.scan-launch:hover:not(:disabled) { color: var(--ink); background: oklch(0.97 0.15 118); transform: translate(-1px, -2px); box-shadow: 5px 6px 0 oklch(0.2 0.06 270 / 35%); }
+.scan-visual { width: 42%; right: -1%; top: 46%; --primary: oklch(0.92 0.2 119); --primary-soft: oklch(1 0 0 / 3%); }
+.scan-visual .radar-glyph { width: 82%; inset: 9%; border-color: oklch(1 0 0 / 35%); box-shadow: 0 0 0 24px oklch(1 0 0 / 4%), 0 0 0 48px oklch(1 0 0 / 3%); }
+.orbit-cross { position: absolute; color: var(--signal-lime); font: 32px var(--font-mono); line-height: 1; }
+.orbit-cross-one { left: 10%; top: 13%; }
+.orbit-cross-two { right: 14%; bottom: 11%; }
+.signal-ticket { position: absolute; left: 3%; bottom: 6%; transform: rotate(-8deg); display: grid; gap: 7px; background: var(--signal-lime); color: var(--ink); padding: 16px 18px; border: 1px solid var(--ink); border-radius: 7px; box-shadow: 4px 4px 0 oklch(0.21 0.015 265 / 25%); }
+.signal-ticket span { font: 8px var(--font-mono); letter-spacing: .1em; }
+.signal-ticket strong { font-size: clamp(12px, 1.6vw, 20px); letter-spacing: -.6px; }
+.hero-footnote { position: absolute; left: 42px; right: 42px; bottom: 19px; display: flex; justify-content: space-between; gap: 20px; padding-top: 12px; border-top: 1px solid oklch(1 0 0 / 25%); font: 7px var(--font-mono); letter-spacing: .1em; color: oklch(0.97 0.01 270); }
+.scan-filters { border: 1px solid var(--border); border-radius: 12px; }
+.scan-filters [aria-pressed=true] { background: var(--ink); color: oklch(0.99 0 0); }
+.result-stat { border: 1px solid var(--border); border-radius: 12px; }
+.result-stat:nth-child(2) { background: var(--signal-lime); border-color: var(--signal-lime); }
+.result-stat:nth-child(2) .stat-value, .result-stat:nth-child(2) .stat-label { color: var(--ink); }
+.job-result-card { border: 1px solid var(--border); border-radius: 15px; transition: transform 180ms, border-color 180ms, box-shadow 180ms; }
+.job-result-card:hover { transform: translate(-2px, -3px); border-color: var(--primary); box-shadow: 5px 5px 0 var(--primary-soft); }
+.job-result-card h3 { font-size: 22px; letter-spacing: -.9px; }
+.job-result-card .card-arrow { color: var(--ink); background: var(--signal-lime); border-radius: 7px; }
+.company-tone-0 { color: var(--primary); background: var(--primary-soft); }
+.company-tone-1 { color: var(--ink); background: var(--signal-lime); }
+.company-tone-2 { color: var(--ink); background: oklch(0.94 0.025 65); }
+.company-tone-3 { color: var(--ink); background: var(--muted); }
+.profile-banner { background: var(--signal-lime); border-color: var(--ink); box-shadow: 4px 4px 0 oklch(0.21 0.015 265 / 10%); }
+.profile-banner h2, .profile-banner p { color: var(--ink); }
+.profile-avatar { background: var(--ink); color: var(--signal-lime); border-radius: 50%; }
+.profile-savebar { background: oklch(0.975 0.008 95 / 98%); }
+.pipeline-column { background: var(--secondary); }
+.empty-state { border: 1px dashed var(--input); background: transparent; }
+.empty-state-icon { background: var(--primary-soft); }
+@media (max-width: 1100px) and (min-width: 761px) {
+  .workspace-brand .radar-glyph { width: 30px; height: 30px; }
+  .brand-name { font-size: 22px; }
+  .scan-hero { padding: 32px 30px 60px; }
+  .hero-footnote { left: 30px; right: 30px; }
+  .signal-ticket { padding: 12px; }
+}
+@media (max-width: 760px) {
+  .scan-hero { min-height: 405px; padding: 28px 24px 64px; border-radius: 15px; }
+  .scan-hero-copy { max-width: 100%; }
+  .scan-hero h1 { font-size: clamp(42px, 10vw, 66px); letter-spacing: -3px; }
+  .scan-hero .eyebrow { font-size: 8px; }
+  .scan-hero-copy > p { max-width: 300px; }
+  .scan-visual { width: 200px; right: -105px; top: 46%; opacity: .18; z-index: -1; }
+  .signal-ticket, .orbit-cross { display: none; }
+  .hero-footnote { left: 24px; right: 24px; font-size: 6px; }
+  .hero-footnote span:last-child { display: none; }
+  .job-result-card h3 { font-size: 18px; }
+  .workspace-navigation { gap: 7px; }
+  .workspace-nav-link.is-active { box-shadow: 2px 2px 0 var(--signal-lime); }
 }

@@ -4,7 +4,8 @@ Usage:
     from llm import complete_json, acomplete_json
     profile = complete_json("smart", system=PROMPT, user=cv_text, schema=Profile)
     # in parallel (e.g. ranking in groups):
-    results = await asyncio.gather(*(acomplete_json("fast", ..., schema=X) for ... in gruppi))
+    results = await asyncio.gather(*(acomplete_json("fast", ..., schema=X) for ... in groups))
+    # for fast ranking, acomplete_json accepts reasoning_effort="none"
 
 DeepSeek guarantees valid JSON but NOT the schema: we validate with Pydantic and,
 if that fails, retry sending the error back to the model.
@@ -133,8 +134,12 @@ async def acomplete_json(
     temperature: float = 0.3,
     max_tokens: int = 4096,
     retries: int = 2,
+    reasoning_effort: Literal["none", "low", "high", "max"] | None = None,
 ) -> T:
     messages = _messages(system, user, schema)
+    options = {}
+    if reasoning_effort is not None:
+        options["reasoning_effort"] = reasoning_effort
     last_err: Exception | None = None
     for attempt in range(retries + 1):
         t0 = time.monotonic()
@@ -144,6 +149,7 @@ async def acomplete_json(
             response_format={"type": "json_object"},
             temperature=temperature,
             max_tokens=max_tokens,
+            **options,
         )
         raw = resp.choices[0].message.content
         _log_call(kind, schema, attempt, t0, resp)

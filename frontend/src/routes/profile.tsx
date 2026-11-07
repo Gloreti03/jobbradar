@@ -13,6 +13,7 @@ import { useProfileQuery } from "@/components/radar/AppShell";
 import { ErrorState, LoadingState, PageHeader, Panel, formatDate } from "@/components/radar/shared";
 import { DISCOVERY_QUESTIONS, mergeAttachments, splitProfileMaterial } from "@/lib/profile-material";
 import { saveProfileWithAnswers } from "@/lib/save-profile";
+import { cacheUploadedProfile } from "@/lib/upload-profile-cache";
 import { DocumentWarnings } from "@/components/radar/DocumentWarnings";
 
 export const Route = createFileRoute("/profile")({
@@ -42,9 +43,8 @@ function UploadScreen({ firstUse, onDone }: { firstUse?: boolean; onDone?: (prof
   const [text, setText] = useState("");
   const m = useMutation({
     mutationFn: () => api.uploadProfile(cv!, extra, text),
-    onSuccess: (p) => {
-      qc.setQueryData(qk.profile, p);
-      qc.setQueryData(["radar", "last"], null);
+    onSuccess: async (p) => {
+      await cacheUploadedProfile(qc, p);
       toast.success("Profile created from your CV");
       if (p.warnings?.length) toast.warning("Your documents need a review. Check the notices on your profile.");
       onDone?.(p);
@@ -209,7 +209,7 @@ function ProfileEditor({ data }: { data: ProfileOut }) {
 
       {reupload && (
         <div className="mb-8">
-          <UploadScreen onDone={(updated) => { setUploadWarnings(updated.warnings ?? []); setReupload(false); }} />
+          <UploadScreen onDone={(updated) => { setAnswers({}); setDiscovery({}); setUploadWarnings(updated.warnings ?? []); setReupload(false); }} />
         </div>
       )}
 

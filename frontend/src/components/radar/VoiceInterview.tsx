@@ -183,7 +183,8 @@ function VoiceCall({ app, onUseText, onFeedback, resetMute }: Props & { resetMut
       rec.continuous = true;
       rec.onresult = (event) => {
         if (recognitionRef.current !== rec) return;
-        setLiveText(Array.from(event.results).map((r) => r[0]?.transcript ?? "").join(" "));
+        const caption = Array.from(event.results).map((r) => r[0]?.transcript ?? "").join(" ");
+        setLiveText(caption.replace(/\b(mm+-?hmm+|uh-?huh|u+h+m*|u+m+|h+u+m+|h+m+|m+h*m+|e+r+m+|e+h+m*|a+h+)\b[,.…]*\s*/gi, "").replace(/\s{2,}/g, " ").trim());
       };
       rec.onerror = () => { stopCaptions(); setLiveText(""); };
       rec.onend = () => { if (recognitionRef.current === rec) recognitionRef.current = null; };

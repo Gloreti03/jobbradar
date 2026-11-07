@@ -1,0 +1,279 @@
+{
+  "days_requested": 7,
+  "days_used": 7,
+  "widened": false,
+  "scanned_count": 12,
+  "candidates_count": 9,
+  "results": [
+    {
+      "job": {
+        "id": 2,
+        "source": "fixture",
+        "source_id": "fx-002",
+        "title": "Data Scientist – Energy Forecasting",
+        "company": "Nordlys Energi",
+        "location": "Oslo",
+        "description": "Nordlys Energi is hiring a Data Scientist to improve our short-term energy demand forecasts. You will work with time series, gradient boosting and deep learning models, and put models in production with our ML engineers.\n\nRequirements:\n- MSc in data science, statistics, physics or similar\n- Strong Python (pandas, scikit-learn)\n- Experience with time series forecasting\n- Docker and Git\n- Working language is English",
+        "url": "https://example.com/jobs/fx-002",
+        "apply_url": "https://example.com/jobs/fx-002/apply",
+        "posted_at": "2026-11-04T12:00:00Z",
+        "expires_at": "2026-12-01T23:59:00Z",
+        "discovered_at": "2026-11-07T07:00:00Z",
+        "status": "active",
+        "language": "en",
+        "norwegian_required": false
+      },
+      "match": {
+        "score": 88,
+        "verdict": "strong",
+        "reasons": [
+          "MSc Data Science and Python/scikit-learn match the core requirements",
+          "Bike-share forecasting project shows hands-on time series experience",
+          "English working language, no Norwegian needed"
+        ],
+        "gaps": [
+          "No production deployment experience mentioned"
+        ],
+        "to_clarify": [
+          "Experience with deep learning for forecasting?"
+        ]
+      }
+    },
+    {
+      "job": {
+        "id": 1,
+        "source": "fixture",
+        "source_id": "fx-001",
+        "title": "Junior Data Analyst",
+        "company": "Fjordkraft Analytics AS",
+        "location": "Oslo",
+        "description": "We are looking for a Junior Data Analyst to join our insights team in Oslo. You will build dashboards in Power BI, write SQL queries against our data warehouse and support the business with analyses of customer behaviour.\n\nRequirements:\n- Degree in statistics, data science or similar\n- Good knowledge of SQL and Python\n- Experience with Power BI or similar BI tools\n- Fluent English; Norwegian is an advantage\n\nWe offer a hybrid workplace, a friendly international team and a mentor programme for graduates.",
+        "url": "https://example.com/jobs/fx-001",
+        "apply_url": "https://example.com/jobs/fx-001/apply",
+        "posted_at": "2026-11-05T09:00:00Z",
+        "expires_at": "2026-11-30T23:59:00Z",
+        "discovered_at": "2026-11-07T07:00:00Z",
+        "status": "active",
+        "language": "en",
+        "norwegian_required": false
+      },
+      "match": {
+        "score": 85,
+        "verdict": "strong",
+        "reasons": [
+          "Power BI dashboards and SQL directly match the role",
+          "Statistics degree fits the requirements",
+          "Graduate mentor programme suits a junior profile"
+        ],
+        "gaps": [],
+        "to_clarify": [
+          "Availability: full-time start date?"
+        ]
+      }
+    },
+    {
+      "job": {
+        "id": 6,
+        "source": "fixture",
+        "source_id": "fx-006",
+        "title": "Product Analyst",
+        "company": "Bølge Apps AS",
+        "location": "Oslo",
+        "description": "Bølge Apps builds consumer apps used by 2 million Nordic users. As Product Analyst you will design A/B tests, analyse funnels and help product teams make data-driven decisions.\n\nYou have:\n- Experience with A/B testing and statistics\n- SQL and Python or R\n- Curiosity and strong communication skills in English",
+        "url": "https://example.com/jobs/fx-006",
+        "apply_url": "https://example.com/jobs/fx-006/apply",
+        "posted_at": "2026-11-06T14:00:00Z",
+        "expires_at": null,
+        "discovered_at": "2026-11-07T07:00:00Z",
+        "status": "active",
+        "language": "en",
+        "norwegian_required": false
+      },
+      "match": {
+        "score": 80,
+        "verdict": "strong",
+        "reasons": [
+          "A/B testing experience from previous analyst job",
+          "SQL and Python required, both present",
+          "English-speaking team"
+        ],
+        "gaps": [
+          "No experience with consumer app product analytics"
+        ],
+        "to_clarify": []
+      }
+    },
+    {
+      "job": {
+        "id": 11,
+        "source": "fixture",
+        "source_id": "fx-011",
+        "title": "NLP Research Assistant",
+        "company": "Norsk Språkteknologi Lab",
+        "location": "Oslo",
+        "description": "Part-time research assistant (40%) for a project on large language models for Norwegian. Tasks include dataset curation, model evaluation and writing evaluation scripts.\n\nRequirements:\n- Ongoing MSc in CS, language technology or data science\n- Python, experience with Hugging Face Transformers\n- English; Norwegian reading skills are a plus",
+        "url": "https://example.com/jobs/fx-011",
+        "apply_url": "https://example.com/jobs/fx-011/apply",
+        "posted_at": "2026-11-04T09:00:00Z",
+        "expires_at": "2026-11-21T23:59:00Z",
+        "discovered_at": "2026-11-07T07:00:00Z",
+        "status": "active",
+        "language": "en",
+        "norwegian_required": false
+      },
+      "match": {
+        "score": 78,
+        "verdict": "good",
+        "reasons": [
+          "Hugging Face experience from the language classifier project",
+          "Thesis on Norwegian news topic modelling is very relevant",
+          "Part-time role fits alongside studies"
+        ],
+        "gaps": [
+          "Norwegian reading skills are only A2"
+        ],
+        "to_clarify": [
+          "Can you commit to 40% during the thesis semester?"
+        ]
+      }
+    },
+    {
+      "job": {
+        "id": 4,
+        "source": "fixture",
+        "source_id": "fx-004",
+        "title": "Machine Learning Engineer (Graduate)",
+        "company": "Tindra Tech",
+        "location": "Oslo / Remote (Norway)",
+        "description": "Join Tindra Tech's graduate programme as a Machine Learning Engineer. You will help build and deploy NLP models that classify customer support tickets.\n\nWe look for:\n- Recent or upcoming MSc graduates in CS, data science or similar\n- Python and experience with PyTorch or Hugging Face\n- Interest in MLOps (Docker, CI/CD)\n- English required, Norwegian not required",
+        "url": "https://example.com/jobs/fx-004",
+        "apply_url": "https://example.com/jobs/fx-004/apply",
+        "posted_at": "2026-11-03T10:00:00Z",
+        "expires_at": null,
+        "discovered_at": "2026-11-07T07:00:00Z",
+        "status": "active",
+        "language": "en",
+        "norwegian_required": false
+      },
+      "match": {
+        "score": 74,
+        "verdict": "good",
+        "reasons": [
+          "NLP project with Transformers matches the ticket classification task",
+          "Graduate programme targets upcoming MSc graduates",
+          "Docker listed in tools"
+        ],
+        "gaps": [
+          "No PyTorch or CI/CD experience mentioned"
+        ],
+        "to_clarify": []
+      }
+    },
+    {
+      "job": {
+        "id": 9,
+        "source": "fixture",
+        "source_id": "fx-009",
+        "title": "Data Analyst Intern (6 months)",
+        "company": "Grønn Mobilitet",
+        "location": "Oslo",
+        "description": "Help us understand how people move in Oslo! As a Data Analyst Intern you will analyse mobility data from e-bikes and scooters, build visualisations and present insights to the city partnerships team.\n\nYou are:\n- Studying statistics, data science, geography or similar\n- Comfortable with Python and SQL\n- Interested in sustainable urban mobility\n- English speaker (Norwegian is a plus)",
+        "url": "https://example.com/jobs/fx-009",
+        "apply_url": "https://example.com/jobs/fx-009/apply",
+        "posted_at": null,
+        "expires_at": null,
+        "discovered_at": "2026-11-07T07:00:00Z",
+        "status": "active",
+        "language": "en",
+        "norwegian_required": false
+      },
+      "match": {
+        "score": 70,
+        "verdict": "good",
+        "reasons": [
+          "Mobility data analysis matches the bike-share project",
+          "Python and SQL present"
+        ],
+        "gaps": [
+          "Internship may not fit if looking for full-time"
+        ],
+        "to_clarify": [
+          "Posting date unknown: check that it is still open"
+        ]
+      }
+    },
+    {
+      "job": {
+        "id": 5,
+        "source": "fixture",
+        "source_id": "fx-005",
+        "title": "BI Developer",
+        "company": "Havbris Logistics",
+        "location": "Lysaker",
+        "description": "Havbris Logistics is looking for a BI Developer to own our reporting platform. You will model data in our warehouse, build Power BI reports and work with stakeholders across operations.\n\nRequirements:\n- 3+ years of experience with BI development\n- Expert SQL and data modelling (star schema)\n- Power BI, DAX\n- English and Norwegian",
+        "url": "https://example.com/jobs/fx-005",
+        "apply_url": "https://example.com/jobs/fx-005/apply",
+        "posted_at": "2026-11-02T09:30:00Z",
+        "expires_at": "2026-11-25T23:59:00Z",
+        "discovered_at": "2026-11-07T07:00:00Z",
+        "status": "active",
+        "language": "en",
+        "norwegian_required": true
+      },
+      "match": {
+        "score": 48,
+        "verdict": "stretch",
+        "reasons": [
+          "Power BI and SQL experience is relevant"
+        ],
+        "gaps": [
+          "Requires 3+ years of BI development",
+          "Norwegian required (profile: A2)",
+          "No DAX experience mentioned"
+        ],
+        "to_clarify": []
+      }
+    },
+    {
+      "job": {
+        "id": 3,
+        "source": "fixture",
+        "source_id": "fx-003",
+        "title": "Dataanalytiker",
+        "company": "Oslo Kommune – Velferdsetaten",
+        "location": "Oslo",
+        "description": "Velferdsetaten søker en dataanalytiker som skal jobbe med statistikk og analyse av tjenestedata. Du vil lage rapporter og dashboards i Power BI og samarbeide med fagmiljøer i hele etaten.\n\nKvalifikasjoner:\n- Høyere utdanning innen statistikk, økonomi eller lignende\n- Erfaring med SQL og Power BI\n- Svært god muntlig og skriftlig fremstillingsevne på norsk",
+        "url": "https://example.com/jobs/fx-003",
+        "apply_url": null,
+        "posted_at": "2026-11-06T08:00:00Z",
+        "expires_at": "2026-11-20T23:59:00Z",
+        "discovered_at": "2026-11-07T07:00:00Z",
+        "status": "active",
+        "language": "no",
+        "norwegian_required": true
+      },
+      "match": {
+        "score": 40,
+        "verdict": "stretch",
+        "reasons": [
+          "SQL and Power BI match the technical part"
+        ],
+        "gaps": [
+          "Fluent Norwegian required (profile: A2)"
+        ],
+        "to_clarify": []
+      }
+    }
+  ],
+  "generated_at": "2026-11-07T09:00:00Z",
+  "funnel": {
+    "total": 12,
+    "recent": 11,
+    "location": 11,
+    "language": 11,
+    "keywords": 9,
+    "deduplicated": 9,
+    "live": 9,
+    "ranked": 8
+  }
+}

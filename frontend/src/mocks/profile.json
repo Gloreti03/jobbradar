@@ -1,0 +1,168 @@
+{
+  "id": 1,
+  "profile": {
+    "name": "Sofia Bianchi",
+    "headline": "Data Science MSc student with Python, SQL and machine learning experience",
+    "contacts": {
+      "email": "sofia.bianchi@example.com",
+      "phone": "+47 400 00 000",
+      "location": "Oslo, Norway",
+      "linkedin": "https://www.linkedin.com/in/example-sofia",
+      "github": "https://github.com/example-sofia",
+      "website": null
+    },
+    "summary": "Master's student in Data Science at the University of Oslo with a background in statistics. Two years of part-time experience in data analysis and dashboarding, plus academic projects in machine learning and NLP.",
+    "skills": [
+      "Data analysis",
+      "Machine learning",
+      "Statistics",
+      "Data visualization",
+      "A/B testing",
+      "NLP"
+    ],
+    "tools": [
+      "Python",
+      "pandas",
+      "scikit-learn",
+      "SQL",
+      "PostgreSQL",
+      "Power BI",
+      "Git",
+      "Docker"
+    ],
+    "languages": [
+      {
+        "language": "Italian",
+        "level": "native"
+      },
+      {
+        "language": "English",
+        "level": "C1"
+      },
+      {
+        "language": "Norwegian",
+        "level": "A2"
+      }
+    ],
+    "experiences": [
+      {
+        "role": "Data Analyst (part-time)",
+        "company": "Ristorazione Nord SRL",
+        "location": "Milan, Italy",
+        "start_date": "2022-09",
+        "end_date": "2024-07",
+        "bullets": [
+          "Built weekly sales dashboards in Power BI used by 12 store managers",
+          "Automated data cleaning of POS exports with Python and pandas",
+          "Ran A/B tests on promotional emails and reported results to management"
+        ]
+      },
+      {
+        "role": "Teaching Assistant, Introductory Statistics",
+        "company": "University of Oslo",
+        "location": "Oslo, Norway",
+        "start_date": "2025-01",
+        "end_date": null,
+        "bullets": [
+          "Run weekly exercise sessions for groups of 25 students",
+          "Grade assignments and hold office hours in English"
+        ]
+      }
+    ],
+    "education": [
+      {
+        "degree": "MSc Data Science",
+        "institution": "University of Oslo",
+        "location": "Oslo, Norway",
+        "start_date": "2024-08",
+        "end_date": "2026-06",
+        "details": [
+          "Thesis: topic modelling of Norwegian news articles"
+        ]
+      },
+      {
+        "degree": "BSc Statistics",
+        "institution": "University of Milan",
+        "location": "Milan, Italy",
+        "start_date": "2021-09",
+        "end_date": "2024-07",
+        "details": []
+      }
+    ],
+    "projects": [
+      {
+        "name": "Oslo bike-share demand forecast",
+        "description": "Forecast hourly bike demand per station using public Oslo Bysykkel data and gradient boosting.",
+        "tools": [
+          "Python",
+          "scikit-learn",
+          "LightGBM"
+        ],
+        "url": "https://github.com/example-sofia/bysykkel-forecast"
+      },
+      {
+        "name": "Job ad language classifier",
+        "description": "Classifier detecting whether a job ad requires Norwegian, trained on 2,000 labelled ads.",
+        "tools": [
+          "Python",
+          "Hugging Face Transformers"
+        ],
+        "url": null
+      }
+    ],
+    "preferences": {
+      "roles": [
+        "Data Analyst",
+        "Data Scientist",
+        "Junior ML Engineer"
+      ],
+      "cities": [
+        "Oslo"
+      ],
+      "seniority": "junior",
+      "work_modes": [
+        "hybrid",
+        "onsite"
+      ],
+      "industries": [
+        "energy",
+        "public sector"
+      ]
+    },
+    "search_terms": [
+      "data analyst",
+      "dataanalytiker",
+      "data scientist",
+      "dataforsker",
+      "machine learning",
+      "maskinlæring",
+      "ML engineer",
+      "business intelligence",
+      "BI-analytiker",
+      "analytics",
+      "analytiker",
+      "python",
+      "SQL",
+      "power bi",
+      "statistics",
+      "statistiker",
+      "junior",
+      "graduate",
+      "nyutdannet",
+      "trainee",
+      "NLP",
+      "data engineer",
+      "dataingeniør",
+      "insights"
+    ],
+    "missing_info": [
+      "Do you have a work permit for Norway, or do you need visa sponsorship?",
+      "In your Oslo bike-share forecast, which data did you use besides trip history, and how did you check the model?",
+      "In your thesis on Norwegian news, which topic modelling method and tools did you use?",
+      "As a data analyst at Ristorazione Nord, did you write SQL queries yourself? On which database?"
+    ]
+  },
+  "extra_text": "I am especially interested in public sector and energy companies.",
+  "updated_at": "2026-11-07T08:30:00Z",
+  "warnings": []
+}

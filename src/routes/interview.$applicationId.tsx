@@ -1,10 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { MessagesSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/radar/shared";
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { api, qk } from "@/api";
+import { ErrorState, LoadingState } from "@/components/radar/shared";
+import { Interview } from "@/components/radar/Interview";
 
-// Integration placeholder: Interview, VoiceInterview and Feedback are owned by another teammate.
-// Their screens replace this component and use POST /interview/{application_id}/start|turn|feedback.
+// D — Mock interview (owner: Matilde): text mode + feedback, based on the snapshot saved with "I applied".
 export const Route = createFileRoute("/interview/$applicationId")({
   head: () => ({
     meta: [
@@ -14,21 +14,13 @@ export const Route = createFileRoute("/interview/$applicationId")({
       { property: "og:description", content: "Practice a mock interview for your application." },
     ],
   }),
-  component: InterviewPlaceholder,
+  component: InterviewPage,
 });
 
-function InterviewPlaceholder() {
-  const { applicationId } = Route.useParams();
-  return (
-    <EmptyState
-      icon={<MessagesSquare className="size-6" />}
-      title="Interview practice is coming soon"
-      body="A mock interview based on the CV and cover letter you submitted will appear here."
-      action={
-        <Button asChild variant="outline">
-          <Link to="/applications/$id" params={{ id: applicationId }}>Back to application</Link>
-        </Button>
-      }
-    />
-  );
+function InterviewPage() {
+  const id = Number(Route.useParams().applicationId);
+  const q = useQuery({ queryKey: qk.application(id), queryFn: () => api.getApplication(id) });
+  if (q.isPending) return <LoadingState label="Loading application…" />;
+  if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
+  return <Interview app={q.data} />;
 }

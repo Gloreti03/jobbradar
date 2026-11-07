@@ -153,3 +153,46 @@ export interface ApplicationOut {
 }
 
 export const APPLICATION_STATUSES: ApplicationStatus[] = ["draft", "applied", "interviewing", "rejected", "offer"];
+
+// ---------------------------------------------------------------- D — Mock interview (Matilde)
+export type InterviewMode = "text" | "voice";
+export type QuestionKind = "intro" | "behavioral" | "technical" | "motivation" | "gap";
+export interface InterviewQuestion { id: number; kind: QuestionKind; question: string; focus: string }
+export interface TranscriptTurn { role: "interviewer" | "candidate"; content: string; question_id: number | null }
+export interface QuestionFeedback {
+  question_id: number;
+  question: string;
+  score: number; // 1..5
+  comment: string;
+  better_answer: string; // only true facts from the CV / answers
+}
+export interface InterviewFeedback {
+  overall_score: number; // 0..100
+  summary: string;
+  strengths: string[];
+  improvements: string[];
+  questions: QuestionFeedback[];
+}
+export interface InterviewStartResponse {
+  interview_id: number;
+  application_id: number;
+  mode: InterviewMode;
+  plan: InterviewQuestion[]; // 6 questions
+  message: string; // interviewer's first message
+  question_index: number; // 0-based
+}
+export interface InterviewTurnResponse {
+  interview_id: number;
+  message: string; // next question, or the closing message
+  question_index: number;
+  done: boolean; // true after the 6th answer -> ask for feedback
+}
+export interface InterviewOut {
+  id: number;
+  application_id: number;
+  mode: InterviewMode;
+  plan: InterviewQuestion[];
+  transcript: TranscriptTurn[];
+  feedback: InterviewFeedback | null;
+}
+export interface SignedUrlResponse { signed_url: string }

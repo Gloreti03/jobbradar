@@ -7,7 +7,13 @@
 import type {
   ApplicationOut,
   ApplicationPatch,
+  InterviewFeedback,
+  InterviewMode,
+  InterviewOut,
+  InterviewStartResponse,
+  InterviewTurnResponse,
   JobDetail,
+  SignedUrlResponse,
   JobOut,
   ProfileOut,
   ProfileAnswers,
@@ -20,6 +26,7 @@ import profileFixture from "./mocks/profile.json";
 import jobsFixture from "./mocks/jobs.json";
 import radarFixture from "./mocks/radar_response.json";
 import applicationFixture from "./mocks/application.json";
+import interviewFixture from "./mocks/interview.json";
 
 export const USE_MOCKS = String(import.meta.env["VITE_USE_MOCKS"] ?? "true") !== "false";
 export const API_URL = (import.meta.env["VITE_API_URL"] as string | undefined) ?? "http://localhost:8000";
@@ -81,6 +88,15 @@ const real = {
   patchApplication: (id: number, patch: ApplicationPatch) =>
     request<ApplicationOut>(`/applications/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
   markApplied: (id: number) => request<ApplicationOut>(`/applications/${id}/applied`, { method: "POST" }),
+  // D — mock interview (Matilde)
+  startInterview: (applicationId: number, mode: InterviewMode = "text") =>
+    request<InterviewStartResponse>(`/interview/${applicationId}/start`, { method: "POST", body: JSON.stringify({ mode }) }),
+  interviewTurn: (applicationId: number, answer: string) =>
+    request<InterviewTurnResponse>(`/interview/${applicationId}/turn`, { method: "POST", body: JSON.stringify({ answer }) }),
+  interviewFeedback: (applicationId: number) =>
+    request<InterviewFeedback>(`/interview/${applicationId}/feedback`, { method: "POST" }),
+  getInterview: (applicationId: number) => request<InterviewOut>(`/interview/${applicationId}`),
+  getVoiceSignedUrl: () => request<SignedUrlResponse>("/voice/signed-url"),
 };
 
 // ---------------------------------------------------------------- mock store
@@ -289,7 +305,69 @@ const mock = {
     save(s);
     return a;
   },
+  // D — mock interview (Matilde): follows src/mocks/interview.json, state in its own localStorage key
+  async startInterview(applicationId: number, mode: InterviewMode = "text"): Promise<InterviewStartResponse> {
+    await delay(1500);
+    mockInterviewUnlocked(applicationId);
+    const fx = clone(interviewFixture as unknown as InterviewOut);
+    const first = fx.transcript.find((t) => t.role === "interviewer")!;
+    const iv: InterviewOut = { ...fx, application_id: applicationId, mode, transcript: [first], feedback: null };
+    saveMockInterview(iv);
+    return { interview_id: iv.id, application_id: applicationId, mode, plan: iv.plan, message: first.content, question_index: 0 };
+  },
+  async interviewTurn(applicationId: number, answer: string): Promise<InterviewTurnResponse> {
+    await delay(700);
+    const iv = loadMockInterview(applicationId);
+    const index = iv.transcript.filter((t) => t.role === "candidate").length;
+    if (index >= iv.plan.length) throw new ApiError("client", "The interview is over: ask for the feedback", 409);
+    iv.transcript.push({ role: "candidate", content: answer, question_id: iv.plan[index]!.id });
+    const asked = (interviewFixture as unknown as InterviewOut).transcript.filter((t) => t.role === "interviewer");
+    const next = asked[index + 1] ?? asked[asked.length - 1]!;
+    iv.transcript.push(clone(next));
+    saveMockInterview(iv);
+    return { interview_id: iv.id, message: next.content, question_index: index + 1, done: index + 1 >= iv.plan.length };
+  },
+  async interviewFeedback(applicationId: number): Promise<InterviewFeedback> {
+    await delay(2000);
+    const iv = loadMockInterview(applicationId);
+    iv.feedback = clone((interviewFixture as unknown as InterviewOut).feedback!);
+    saveMockInterview(iv);
+    return iv.feedback;
+  },
+  async getInterview(applicationId: number): Promise<InterviewOut> {
+    await delay(200);
+    return loadMockInterview(applicationId);
+  },
+  async getVoiceSignedUrl(): Promise<SignedUrlResponse> {
+    await delay(200);
+    throw new ApiError("server", "Voice is not available in demo mode: use text mode", 503);
+  },
 };
+
+const INTERVIEW_KEY = "radar_demo_interviews_v1";
+function mockInterviews(): Record<string, InterviewOut> {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(localStorage.getItem(INTERVIEW_KEY) ?? "{}");
+  } catch {
+    return {};
+  }
+}
+function saveMockInterview(iv: InterviewOut) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(INTERVIEW_KEY, JSON.stringify({ ...mockInterviews(), [iv.application_id]: iv }));
+}
+function loadMockInterview(applicationId: number): InterviewOut {
+  const iv = mockInterviews()[applicationId];
+  if (!iv) throw new ApiError("not_found", "No interview started for this application: call /start first", 404);
+  return iv;
+}
+function mockInterviewUnlocked(applicationId: number) {
+  const a = load().applications.find((x) => x.id === applicationId);
+  if (!a) throw new ApiError("not_found", "Application not found", 404);
+  if (a.status === "draft" || !a.snapshot)
+    throw new ApiError("client", 'The mock interview unlocks after you apply: press "I applied" first', 409);
+}
 
 export const api = USE_MOCKS ? mock : real;
 
@@ -298,4 +376,5 @@ export const qk = {
   job: (id: number) => ["job", id] as const,
   applications: ["applications"] as const,
   application: (id: number) => ["application", id] as const,
+  interview: (applicationId: number) => ["interview", applicationId] as const,
 };

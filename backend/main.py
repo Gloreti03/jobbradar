@@ -2,7 +2,6 @@
 Interactive docs: http://localhost:8000/docs
 """
 
-import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -15,14 +14,11 @@ from config import FRONTEND_ORIGIN
 from db import init_db
 from llm import LLMError
 from routers import applications, imports, interview, jobs, profile, radar, tracking, voice
-from services.profile_extract import warm_up_ocr
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
-    # load the OCR engine in the background: the first scanned upload would otherwise wait ~1 min
-    threading.Thread(target=warm_up_ocr, name="ocr-warm-up", daemon=True).start()
     yield
 
 

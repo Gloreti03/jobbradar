@@ -108,7 +108,8 @@ def _get_ocr_engine():
 
 
 def warm_up_ocr() -> None:
-    """Called in a background thread at startup so the first scanned upload is not slow."""
+    """Optional: preload the OCR engine (not done at startup: the heavy imports slow every request
+    for ~1 min). The engine is otherwise loaded on the first scanned PDF."""
     start = time.monotonic()
     try:
         _get_ocr_engine()

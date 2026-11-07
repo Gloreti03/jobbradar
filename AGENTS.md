@@ -28,3 +28,9 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules
+- All backend access goes through `src/api.ts` (mock store vs FastAPI via VITE_USE_MOCKS / VITE_API_URL); pages never fetch directly, so the backend can be swapped without touching screens.
+- `src/types.ts` mirrors the backend `schemas.py` contract with snake_case fields; change both together.
+- Frontend only: no Lovable Cloud, auth, server functions or AI calls — the team's FastAPI backend owns them.
+- Interview/VoiceInterview/Feedback belong to another teammate; `/interview/$applicationId` is the placeholder they replace.

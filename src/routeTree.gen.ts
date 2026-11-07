@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RadarRouteImport } from './routes/radar'
 import { Route as ApplicationsIndexRouteImport } from './routes/applications.index'
+import { Route as ApplicationsIdRouteImport } from './routes/applications.$id'
 import { Route as InterviewApplicationIdRouteImport } from './routes/interview.$applicationId'
 import { Route as JobsIdRouteImport } from './routes/jobs.$id'
 import { Route as PrintCoverIdRouteImport } from './routes/print.cover.$id'
@@ -36,6 +37,11 @@ const RadarRoute = RadarRouteImport.update({
 const ApplicationsIndexRoute = ApplicationsIndexRouteImport.update({
   id: '/applications/',
   path: '/applications/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApplicationsIdRoute = ApplicationsIdRouteImport.update({
+  id: '/applications/$id',
+  path: '/applications/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InterviewApplicationIdRoute = InterviewApplicationIdRouteImport.update({
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
   '/radar': typeof RadarRoute
+  '/applications/$id': typeof ApplicationsIdRoute
   '/interview/$applicationId': typeof InterviewApplicationIdRoute
   '/jobs/$id': typeof JobsIdRoute
   '/applications/': typeof ApplicationsIndexRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
   '/radar': typeof RadarRoute
+  '/applications/$id': typeof ApplicationsIdRoute
   '/interview/$applicationId': typeof InterviewApplicationIdRoute
   '/jobs/$id': typeof JobsIdRoute
   '/applications': typeof ApplicationsIndexRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
   '/radar': typeof RadarRoute
+  '/applications/$id': typeof ApplicationsIdRoute
   '/interview/$applicationId': typeof InterviewApplicationIdRoute
   '/jobs/$id': typeof JobsIdRoute
   '/applications/': typeof ApplicationsIndexRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/profile'
     | '/radar'
+    | '/applications/$id'
     | '/interview/$applicationId'
     | '/jobs/$id'
     | '/applications/'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/profile'
     | '/radar'
+    | '/applications/$id'
     | '/interview/$applicationId'
     | '/jobs/$id'
     | '/applications'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/profile'
     | '/radar'
+    | '/applications/$id'
     | '/interview/$applicationId'
     | '/jobs/$id'
     | '/applications/'
@@ -127,6 +139,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProfileRoute: typeof ProfileRoute
   RadarRoute: typeof RadarRoute
+  ApplicationsIdRoute: typeof ApplicationsIdRoute
   InterviewApplicationIdRoute: typeof InterviewApplicationIdRoute
   JobsIdRoute: typeof JobsIdRoute
   ApplicationsIndexRoute: typeof ApplicationsIndexRoute
@@ -164,6 +177,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApplicationsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/applications/$id': {
+      id: '/applications/$id'
+      path: '/applications/$id'
+      fullPath: '/applications/$id'
+      preLoaderRoute: typeof ApplicationsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/interview/$applicationId': {
       id: '/interview/$applicationId'
       path: '/interview/$applicationId'
@@ -199,6 +219,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProfileRoute: ProfileRoute,
   RadarRoute: RadarRoute,
+  ApplicationsIdRoute: ApplicationsIdRoute,
   InterviewApplicationIdRoute: InterviewApplicationIdRoute,
   JobsIdRoute: JobsIdRoute,
   ApplicationsIndexRoute: ApplicationsIndexRoute,

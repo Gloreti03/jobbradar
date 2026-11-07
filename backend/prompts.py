@@ -145,6 +145,9 @@ Before answering, re-read every sentence of the CV and cover letter and delete a
 you cannot point to in the profile or extra material."""
 
 TAILOR_USER = """\
+TODAY: {today}. Each experience and education entry has a computed "timing" (ongoing / completed /
+upcoming): use present tense for ongoing ("I am currently on exchange at ..."), past for completed.
+
 CANDIDATE PROFILE (JSON):
 {profile_json}
 

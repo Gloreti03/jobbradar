@@ -19,6 +19,8 @@ uv run uvicorn main:app --reload --port 8000
 - Endpoints that are not implemented yet are **stubs** that return the matching file in `fixtures/`.
 - New library: `uv add <package>`, then commit `pyproject.toml` + `uv.lock` (tell the group).
 - If you change a fixture: `uv run python scripts/check_fixtures.py`.
+- Full path check A -> B -> C -> D against the running backend: `uv run python scripts/e2e.py`
+  (~1.5 min, uses `fixtures/sample_cv.pdf`; it writes to your DB, so never run it on the demo DB).
 - If the tables change (`models.py`): delete `backend/radar.db` and restart.
 
 ## Git

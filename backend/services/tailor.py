@@ -11,6 +11,7 @@ from prompts import TAILOR_SYSTEM, TAILOR_USER
 from schemas import ApplicationNotes, DocLanguage, JobOut, Profile, Schema, TailoredCV
 
 MAX_DESCRIPTION_CHARS = 12_000
+MAX_MISSING_REQUIREMENTS = 6  # more than this does not fit on a card
 NORWEGIAN_OK_LEVELS = {"native", "c2", "c1", "b2"}
 NORWEGIAN_NAMES = {"norwegian", "norsk", "bokmål", "bokmal", "nynorsk"}
 
@@ -95,6 +96,7 @@ def tailor(profile: Profile, job: JobOut, extra_text: str = "") -> tuple[DocLang
     )
     # fast model: ~15 s vs ~60-100 s for the smart one, same quality in tests (BLUEPRINT: < 30 s)
     out = complete_json("fast", system, user, TailorOutput, temperature=0.2, max_tokens=8000)
+    out.notes.missing_requirements = out.notes.missing_requirements[:MAX_MISSING_REQUIREMENTS]
     out.cv, removed = enforce_facts(out.cv, profile)
     if removed:
         out.notes.changes.append("Removed items not found in your profile: " + "; ".join(removed))

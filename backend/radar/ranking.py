@@ -32,7 +32,7 @@ async def rank_jobs(profile: Profile, jobs: list[JobOut]) -> dict[int, MatchOut]
         result = await acomplete_json(
             "fast", system=f"{RANKING_SYSTEM}\n\n{NO_INVENTION_RULES}",
             user=json.dumps(payload, ensure_ascii=False), schema=RankingBatch,
-            temperature=0, max_tokens=4500, retries=0, reasoning_effort="none",
+            temperature=0, max_tokens=4500, retries=1, reasoning_effort="none",
         )
         expected = {job.id for job in batch}
         returned = [entry.job_id for entry in result.results]

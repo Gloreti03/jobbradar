@@ -7,6 +7,20 @@ from radar.providers.base import NormalizedJob, as_utc, canonical_url, clean_des
 from schemas import Preferences, Profile
 
 OSLO_AREA = ("oslo", "lysaker", "fornebu", "sandvika", "bærum", "asker", "lillestrøm", "lørenskog", "ski", "nordre follo")
+SENIORITY_WORDS = {"intern", "junior", "graduate", "nyutdannet", "trainee", "senior", "mid", "lead", "principal", "head", "director", "chief"}
+GENERIC_ROLE_WORDS = {"developer", "engineer", "utvikler", "ingeniør", "programmer", "of"}
+
+
+def normalize_terms(value: str) -> str:
+    text = re.sub(r"[\u2010-\u2015]", "-", value.casefold())
+    text = re.sub(r"\b(back|front)[\s_-]*end", r"\1end", text)
+    text = re.sub(r"\bfull[\s_-]*stack", "fullstack", text)
+    text = re.sub(r"\b(backend|frontend)(utvikler|developer)\b", r"\1 \2", text)
+    return " ".join(re.findall(r"\w+(?:[+#]+)?", text))
+
+
+def contains_term(text: str, term: str) -> bool:
+    return bool(re.search(r"(?<!\w)" + re.escape(term) + r"(?!\w)", text))
 
 
 def language_flags(title: str, description: str) -> tuple[str | None, bool | None]:
@@ -32,16 +46,24 @@ def language_flags(title: str, description: str) -> tuple[str | None, bool | Non
 
 def title_terms(profile: Profile) -> tuple[list[str], list[str]]:
     terms = profile.search_terms + profile.preferences.roles
-    positive = [term.strip().casefold() for term in terms if term.strip() and not term.startswith(("-", "!"))]
-    negative = [term[1:].strip().casefold() for term in terms if term.startswith(("-", "!")) and term[1:].strip()]
-    if profile.preferences.seniority in {"intern", "junior", "graduate"}:
-        negative += ["senior", "principal", "head of", "director", "chief"]
+    terms = [term.strip() for term in terms if term.strip()]
+    positive = list(dict.fromkeys(normalize_terms(term) for term in terms if not term.startswith(("-", "!"))))
+    positive = [term for term in positive if set(term.split()) - SENIORITY_WORDS]
+    negative = [normalize_terms(term[1:]) for term in terms if term.startswith(("-", "!")) and normalize_terms(term[1:])]
     return positive, negative
 
 
 def title_relevance(title: str, profile: Profile) -> int:
     positive, _ = title_terms(profile)
-    return sum(term in title.casefold() for term in positive)
+    text = normalize_terms(title)
+    score = 0
+    for term in positive:
+        if contains_term(text, term):
+            score += 2
+            continue
+        words = set(term.split()) - SENIORITY_WORDS - GENERIC_ROLE_WORDS
+        score += sum(contains_term(text, word) for word in words)
+    return score
 
 
 def location_matches(location: str | None, profile: Profile) -> bool:
@@ -81,13 +103,15 @@ def filter_jobs(jobs: list, profile: Profile, days: int, english_only: bool, now
             continue
         if english_only and (job.language != "en" or job.norwegian_required is not False):
             continue
-        title = job.title.casefold()
-        if any(re.search(r"(?<!\w)" + re.escape(term) + r"(?!\w)", title) for term in negative):
+        title = normalize_terms(job.title)
+        if any(contains_term(title, term) for term in negative):
             continue
-        if positive and not any(term in title for term in positive):
-            continue
+        if positive and not title_relevance(job.title, profile):
+            description = normalize_terms(job.description or "")
+            if not any(contains_term(description, term) for term in positive):
+                continue
         url = canonical_url(job.url)
-        title_key = (title.strip(), (job.company or "").strip().casefold())
+        title_key = (title, (job.company or "").strip().casefold())
         if url in urls or (job.company and title_key in titles):
             continue
         urls.add(url)

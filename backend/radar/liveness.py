@@ -2,6 +2,7 @@
 
 import asyncio
 from datetime import datetime, timezone
+from urllib.parse import quote
 
 import httpx
 
@@ -17,9 +18,14 @@ async def check_jobs(jobs: list) -> tuple[list, list[int]]:
                 return job, False, True
             if job.source in {"nav", "fixture"}:
                 return job, True, False
+            url = job.url
+            if job.source == "greenhouse":
+                board, separator, posting_id = job.source_id.partition(":")
+                if separator and board and posting_id:
+                    url = f"https://boards-api.greenhouse.io/v1/boards/{quote(board, safe='')}/jobs/{quote(posting_id, safe='')}"
             async with semaphore:
                 try:
-                    response = await client.get(job.url)
+                    response = await client.get(url)
                 except httpx.HTTPError:
                     return job, False, False
             closed = response.status_code in {404, 410}

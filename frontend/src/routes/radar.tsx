@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowRight, ArrowUpRight, CircleHelp, Info, Loader2, Lock, MapPin, Minus, Plus, Radar as RadarIcon, Search, SlidersHorizontal } from "lucide-react";
+import { ArrowRight, ArrowUpRight, ChevronDown, CircleHelp, Info, Loader2, Lock, MapPin, Minus, Plus, Radar as RadarIcon, Search, SlidersHorizontal } from "lucide-react";
 import { api, isNotFound } from "@/api";
 import type { RadarRequest, RadarResponse, RadarResult } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -55,9 +55,10 @@ function RadarPage() {
         <div className="hero-footnote" aria-hidden="true"><span>BUILT AROUND YOU</span><span>PROFILE → OPPORTUNITY → NEXT CHAPTER</span></div>
       </section>
 
-      <section className="scan-filters" aria-label="Search preferences">
-        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground"><SlidersHorizontal className="size-4" /> Fine-tune your search</div>
-        <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
+      <details open className="scan-filters" aria-label="Search preferences">
+        <summary><SlidersHorizontal className="size-4" /><span>Fine-tune your search</span><ChevronDown className="ml-auto size-4" /></summary>
+        <div className="scan-filter-controls">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs text-muted-foreground">Published within</span>
           <div className="flex rounded-lg bg-muted p-1" role="group" aria-label="Publication window">
             {DAYS.map((d) => <button key={d} disabled={scan.isPending} aria-pressed={d === days} onClick={() => setDays(d)} className={cn("rounded-md px-3 py-1.5 text-xs font-semibold transition-colors", d === days ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>{d}d</button>)}
@@ -67,7 +68,8 @@ function RadarPage() {
           <Switch checked={englishOnly} disabled={scan.isPending} onCheckedChange={setEnglishOnly} />
           <span><span className="block text-xs font-semibold">English-friendly</span><span className="text-[10px] text-muted-foreground">Exclude Norwegian-required roles</span></span>
         </label>
-      </section>
+        </div>
+      </details>
 
       {scan.isError && <ErrorState error={scan.error} onRetry={() => scan.mutate()} />}
       {!scan.isError && scan.isPending && !data && <LoadingState label="Finding and ranking your opportunities…" />}

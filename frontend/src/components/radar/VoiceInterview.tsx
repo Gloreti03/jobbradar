@@ -53,7 +53,14 @@ function VoiceCall({ app, onUseText, onFeedback, resetMute }: Props & { resetMut
   const turnsRef = useRef<VoiceTurn[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<CaptionRecognition | null>(null);
+  const activityTimerRef = useRef<number | null>(null);
   const [liveText, setLiveText] = useState("");
+
+  function stopUserActivity() {
+    if (activityTimerRef.current === null) return;
+    window.clearInterval(activityTimerRef.current);
+    activityTimerRef.current = null;
+  }
 
   function stopCaptions() {
     const rec = recognitionRef.current;
@@ -76,24 +83,41 @@ function VoiceCall({ app, onUseText, onFeedback, resetMute }: Props & { resetMut
       setTurns(turnsRef.current);
     },
     onDisconnect: () => {
+      stopUserActivity();
       stopCaptions();
       setLiveText("");
       resetMute();
       setPhase((p) => (p === "live" || p === "preparing" ? "ended" : p));
     },
-    onError: (message) => setProblem(`Voice connection problem: ${message}`),
+    onError: (message) => {
+      stopUserActivity();
+      setProblem(`Voice connection problem: ${message}`);
+    },
   });
+
+  const sendUserActivity = conversation.sendUserActivity;
+  useEffect(() => {
+    if (phase !== "live" || conversation.isMuted) return;
+    const notify = () => {
+      try { sendUserActivity(); } catch { stopUserActivity(); }
+    };
+    // Hold the agent's turn while the candidate has explicitly opened the mic.
+    activityTimerRef.current = window.setInterval(notify, 1000);
+    notify();
+    return stopUserActivity;
+  }, [phase, conversation.isMuted, sendUserActivity]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [turns.length, liveText]);
 
   // end the call if the user leaves the page
-  useEffect(() => () => { stopCaptions(); void conversation.endSession(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => { stopUserActivity(); stopCaptions(); void conversation.endSession(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const answered = turns.filter((t) => t.role === "candidate").length;
 
   async function start() {
+    stopUserActivity();
     setProblem(null);
     resetMute();
     stopCaptions();
@@ -136,6 +160,7 @@ function VoiceCall({ app, onUseText, onFeedback, resetMute }: Props & { resetMut
   }
 
   function hangUp() {
+    stopUserActivity();
     stopCaptions();
     setLiveText("");
     conversation.setMuted(true);
@@ -169,6 +194,7 @@ function VoiceCall({ app, onUseText, onFeedback, resetMute }: Props & { resetMut
   }
 
   function finishAnswer() {
+    stopUserActivity();
     conversation.setMuted(true);
     stopCaptions();
   }

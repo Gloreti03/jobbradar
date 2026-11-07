@@ -7,10 +7,10 @@ import interview from "@/mocks/interview.json";
 
 const mocks = vi.hoisted(() => ({
   startSession: vi.fn(), endSession: vi.fn(), getVoiceSignedUrl: vi.fn(), startInterview: vi.fn(),
-  setMuted: vi.fn(), saveVoiceTranscript: vi.fn(), interviewFeedback: vi.fn(),
+  setMuted: vi.fn(), sendUserActivity: vi.fn(), saveVoiceTranscript: vi.fn(), interviewFeedback: vi.fn(),
   muted: true, speaking: false,
   onMutedChange: undefined as undefined | ((muted: boolean) => void),
-  callbacks: {} as { onMessage?: (value: { message: string; source: string }) => void; onDisconnect?: () => void },
+  callbacks: {} as { onMessage?: (value: { message: string; source: string }) => void; onDisconnect?: () => void; onError?: (message: string) => void },
 }));
 vi.mock("@elevenlabs/react", () => ({
   ConversationProvider: ({ children, isMuted, onMutedChange }: { children: ReactNode; isMuted: boolean; onMutedChange: (value: boolean) => void }) => {
@@ -20,7 +20,7 @@ vi.mock("@elevenlabs/react", () => ({
   },
   useConversation: (options: typeof mocks.callbacks) => {
     mocks.callbacks = options;
-    return { startSession: mocks.startSession, endSession: mocks.endSession, isSpeaking: mocks.speaking, isMuted: mocks.muted,
+    return { startSession: mocks.startSession, endSession: mocks.endSession, sendUserActivity: mocks.sendUserActivity, isSpeaking: mocks.speaking, isMuted: mocks.muted,
       setMuted: (value: boolean) => { mocks.setMuted(value); mocks.onMutedChange?.(value); } };
   },
 }));
@@ -43,6 +43,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   if (originalMedia) Object.defineProperty(navigator, "mediaDevices", originalMedia);
   else Reflect.deleteProperty(navigator, "mediaDevices");
   HTMLElement.prototype.scrollIntoView = originalScroll;
@@ -61,6 +62,40 @@ async function connect(props = { app: fixture as ApplicationOut, onUseText: vi.f
 }
 
 describe("Voice connection recovery", () => {
+  it("sends user activity every second only during an answer, without duplicate timers on rerender", async () => {
+    await connect();
+    vi.useFakeTimers();
+    act(() => vi.advanceTimersByTime(2000));
+    expect(mocks.sendUserActivity).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Start answer" }));
+    expect(mocks.sendUserActivity).toHaveBeenCalledTimes(1);
+    act(() => vi.advanceTimersByTime(2500));
+    expect(mocks.sendUserActivity).toHaveBeenCalledTimes(3);
+    act(() => mocks.callbacks.onMessage?.({ message: "Part of my answer", source: "user" }));
+    act(() => vi.advanceTimersByTime(500));
+    expect(mocks.sendUserActivity).toHaveBeenCalledTimes(4);
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    act(() => vi.advanceTimersByTime(3000));
+    expect(mocks.sendUserActivity).toHaveBeenCalledTimes(4);
+    fireEvent.click(screen.getByRole("button", { name: "Start answer" }));
+    expect(mocks.sendUserActivity).toHaveBeenCalledTimes(5);
+    act(() => vi.advanceTimersByTime(1000));
+    expect(mocks.sendUserActivity).toHaveBeenCalledTimes(6);
+  });
+
+  it.each(["hangup", "disconnect", "error", "unmount"])("stops activity on %s", async (reason) => {
+    const view = await connect();
+    vi.useFakeTimers();
+    fireEvent.click(screen.getByRole("button", { name: "Start answer" }));
+    expect(mocks.sendUserActivity).toHaveBeenCalledTimes(1);
+    if (reason === "hangup") fireEvent.click(screen.getByRole("button", { name: "End interview" }));
+    else if (reason === "disconnect") act(() => mocks.callbacks.onDisconnect?.());
+    else if (reason === "error") act(() => mocks.callbacks.onError?.("Connection lost"));
+    else view.unmount();
+    act(() => vi.advanceTimersByTime(3000));
+    expect(mocks.sendUserActivity).toHaveBeenCalledTimes(1);
+  });
+
   it("offers text mode without creating an interview when microphone access is denied", async () => {
     media.mockRejectedValue(new Error("Permission denied"));
     const useText = vi.fn();

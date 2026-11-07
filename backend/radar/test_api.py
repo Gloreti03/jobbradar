@@ -90,6 +90,7 @@ class RadarApiTests(unittest.TestCase):
         result = RadarResponse.model_validate(response.json())
         self.assertEqual(result.scanned_count, 0)
         self.assertEqual(result.results, [])
+        self.assertEqual(set(result.funnel.model_dump().values()), {0})
         self.rank.assert_not_awaited()
         self.assertEqual(self.client.get("/jobs/1").status_code, 404)
 
@@ -129,7 +130,10 @@ class RadarApiTests(unittest.TestCase):
         result = RadarResponse.model_validate(first.json())
         self.assertEqual(result.results[0].job.id, job_id)
         self.assertTrue(first.json()["results"][0]["job"]["posted_at"].endswith("Z"))
-        self.assertEqual(self.client.post("/radar", json={}).status_code, 200)
+        cached_response = self.client.post("/radar", json={})
+        self.assertEqual(cached_response.status_code, 200)
+        self.assertEqual(cached_response.json()["funnel"]["live"], 1)
+        self.assertEqual(cached_response.json()["funnel"]["ranked"], 0)
         self.assertEqual(self.rank.await_count, 1)
         self.assertEqual(self.client.get(f"/jobs/{job_id}").json()["match"]["score"], 80)
 
@@ -166,7 +170,54 @@ class RadarApiTests(unittest.TestCase):
                 self.assertEqual(result.results[-1].job.id, unknown)
                 self.assertEqual(result.days_used, 30)
                 self.assertEqual(result.widened, days < 30)
+                self.assertEqual(result.funnel.recent, 6)  # final window, including unknown dates
+                self.assertEqual(result.funnel.language, 4)
         self.assertEqual(self.client.post("/radar", json={"days": 2}).status_code, 422)
+
+    def test_funnel_counts_each_stage_and_liveness_outcome(self):
+        self.profile = Profile(name="Funnel", search_terms=["data analyst"])
+        self.add_profile()
+        live = self.add_job("live")
+        self.add_job("duplicate-url", url="https://example.org/live")
+        self.add_job("duplicate-title", company="Company live")
+        unknown = self.add_job("unknown", posted_at=None)
+        closed = self.add_job("closed")
+        uncertain = self.add_job("uncertain")
+        self.add_job("unrelated", title="Baker", description="Bake bread")
+        self.add_job("norwegian", norwegian_required=True)
+        self.add_job("outside", location="Bergen")
+        self.add_job("old", posted_at=self.now - timedelta(days=40))
+        self.add_job("future", posted_at=self.now + timedelta(days=1))
+        self.add_job("expired", expires_at=self.now - timedelta(days=1))
+        self.add_job("inactive", status="inactive")
+
+        async def liveness(jobs):
+            self.assertEqual({job.id for job in jobs}, {live, unknown, closed, uncertain})
+            return [job for job in jobs if job.id in {live, unknown}], [closed]
+
+        with patch("routers.radar.check_jobs", side_effect=liveness):
+            response = self.client.post("/radar", json={"days": 7, "english_only": True})
+        self.assertEqual(response.status_code, 200, response.text)
+        data = response.json()
+        self.assertEqual(data["funnel"], dict(total=11, recent=9, location=8, language=7,
+                                            keywords=6, deduplicated=4, live=2, ranked=2))
+        self.assertEqual(data["days_used"], 30)
+        self.assertEqual(data["scanned_count"], 13)
+        self.assertEqual(data["candidates_count"], 2)
+        with self.session() as db:
+            self.assertEqual(db.get(JobRow, closed).status, "inactive")
+
+    def test_funnel_counts_live_jobs_before_the_forty_job_ai_limit(self):
+        self.add_profile()
+        for index in range(45):
+            self.add_job(str(index))
+        response = self.client.post("/radar", json={})
+        self.assertEqual(response.status_code, 200, response.text)
+        data = response.json()
+        self.assertEqual(data["funnel"], dict(total=45, recent=45, location=45, language=45,
+                                            keywords=45, deduplicated=45, live=45, ranked=40))
+        self.assertEqual(data["candidates_count"], 40)
+        self.assertEqual(len(data["results"]), 15)
 
     def test_profile_changed_during_ranking_returns_409_without_cached_matches(self):
         self.add_profile()
@@ -209,10 +260,12 @@ class RankingTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(options["retries"], 1)
             self.assertLessEqual(len(payload["jobs"]), 10)
             self.assertNotIn("contacts", payload["profile"])
+            self.assertEqual(payload["profile"]["preferences"]["industries"], ["energy"])
             return RankingBatch(results=[RankedJob(job_id=job["job_id"], match=example_match()) for job in payload["jobs"]])
 
         with patch("radar.ranking.acomplete_json", side_effect=completion) as call:
-            matches = await rank_jobs(Profile(name="Test"), jobs)
+            profile = Profile(name="Test", preferences={"industries": ["energy"]})
+            matches = await rank_jobs(profile, jobs)
         self.assertEqual(len(matches), 40)
         self.assertEqual(call.call_count, 4)
 

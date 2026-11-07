@@ -201,6 +201,26 @@ class TitleFilterTests(unittest.TestCase):
         jobs = [self.job(1, "Junior Accountant"), self.job(2, "Senior Backend Engineer")]
         self.assertEqual([job.id for job in self.selected(jobs, profile)], [2])
 
+    def test_adjacent_roles_and_explicit_entry_roles_reach_ranking(self):
+        terms = ["pricing analyst", "commercial analyst", "strategy analyst", "trainee", "graduate", "intern", "nyutdannet"]
+        titles = ["Senior Pricing Analyst", "Commercial Analyst", "Strategy Analyst", "Trainee Programme",
+                  "Graduate Programme", "Summer Intern 2027", "Nyutdannet økonom"]
+        for term, title in zip(terms, titles):
+            for field in ("search_terms", "roles"):
+                with self.subTest(term=term, field=field):
+                    profile = Profile(name="Adjacent roles", search_terms=[term] if field == "search_terms" else [],
+                                      preferences=Preferences(roles=[term] if field == "roles" else [], cities=["Oslo"]))
+                    jobs = [self.job(1, title), self.job(2, "Baker")]
+                    self.assertEqual([job.id for job in self.selected(jobs, profile)], [1])
+
+    def test_industries_prioritize_relevant_roles_without_becoming_a_filter(self):
+        profile = Profile(name="Energy interest", search_terms=["data analyst"],
+                          preferences=Preferences(cities=["Oslo"], industries=["energy"]))
+        jobs = [self.job(1, "Data Analyst", description="Analyse retail sales."),
+                self.job(2, "Data Analyst", description="Analyse energy markets."),
+                self.job(3, "Baker", description="We serve the energy sector.")]
+        self.assertEqual([job.id for job in self.selected(jobs, profile)], [2, 1])
+
 
 class DateTimezoneTests(unittest.TestCase):
     def test_oslo_dates_use_bundled_timezone_data_when_system_data_is_absent(self):

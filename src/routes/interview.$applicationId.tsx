@@ -8,9 +8,9 @@ import { Interview } from "@/components/radar/Interview";
 export const Route = createFileRoute("/interview/$applicationId")({
   head: () => ({
     meta: [
-      { title: "Interview practice — RADAR" },
+      { title: "Interview practice — JobbRadar" },
       { name: "description", content: "Practice a mock interview for your application." },
-      { property: "og:title", content: "Interview practice — RADAR" },
+      { property: "og:title", content: "Interview practice — JobbRadar" },
       { property: "og:description", content: "Practice a mock interview for your application." },
     ],
   }),

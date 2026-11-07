@@ -48,7 +48,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     if (!isForm) headers.set("Content-Type", "application/json");
     res = await fetch(`${API_URL}${path}`, { ...init, headers });
   } catch {
-    throw new ApiError("network", `Can't reach the RADAR server at ${API_URL}. Is it running?`);
+    throw new ApiError("network", `Can't reach the JobbRadar server at ${API_URL}. Is it running?`);
   }
   if (!res.ok) {
     let msg = `Request failed (${res.status})`;

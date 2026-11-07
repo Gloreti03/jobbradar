@@ -10,9 +10,9 @@ import { CompanyMark, ErrorState, LanguageBadges, LoadingState, Panel, Points, P
 export const Route = createFileRoute("/jobs/$id")({
   head: () => ({
     meta: [
-      { title: "Job details — RADAR" },
+      { title: "Job details — JobbRadar" },
       { name: "description", content: "Job posting, match details and application drafting." },
-      { property: "og:title", content: "Job details — RADAR" },
+      { property: "og:title", content: "Job details — JobbRadar" },
       { property: "og:description", content: "Job posting, match details and application drafting." },
     ],
   }),
@@ -45,7 +45,7 @@ function JobPage() {
   return (
     <div>
       <Link to="/radar" className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" /> Back to Radar
+        <ArrowLeft className="size-4" /> Back to JobbRadar
       </Link>
 
       <div className="mb-8 rounded-2xl border bg-card p-6 sm:p-8">
@@ -115,7 +115,7 @@ function JobPage() {
                 <Points icon={<CircleHelp className="size-3.5" />} title="To clarify" items={match.to_clarify} tone="text-info-foreground" />
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No match analysis yet for this job. Run a Radar scan to rank it.</p>
+              <p className="text-sm text-muted-foreground">No match analysis yet for this job. Run a JobbRadar scan to rank it.</p>
             )}
           </Panel>
         </div>

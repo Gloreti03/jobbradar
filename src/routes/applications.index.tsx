@@ -11,9 +11,9 @@ import { CompanyMark, EmptyState, ErrorState, LoadingState, PageHeader, formatDa
 export const Route = createFileRoute("/applications/")({
   head: () => ({
     meta: [
-      { title: "Applications — RADAR" },
+      { title: "Applications — JobbRadar" },
       { name: "description", content: "Track your job applications from draft to offer." },
-      { property: "og:title", content: "Applications — RADAR" },
+      { property: "og:title", content: "Applications — JobbRadar" },
       { property: "og:description", content: "Track your job applications from draft to offer." },
     ],
   }),
@@ -41,7 +41,7 @@ function ApplicationsPage() {
       {q.isPending && <LoadingState />}
       {q.isError && <ErrorState error={q.error} onRetry={() => q.refetch()} />}
       {q.isSuccess && q.data.length === 0 && (
-        <EmptyState icon={<Briefcase className="size-6" />} title="No applications yet" body="Open a job from Radar and create an application." action={<Button asChild><Link to="/radar">Go to Radar</Link></Button>} />
+        <EmptyState icon={<Briefcase className="size-6" />} title="No applications yet" body="Open a job from JobbRadar and create an application." action={<Button asChild><Link to="/radar">Go to JobbRadar</Link></Button>} />
       )}
       {q.isSuccess && q.data.length > 0 && (
         <div className="pipeline-board" aria-label="Application stages">

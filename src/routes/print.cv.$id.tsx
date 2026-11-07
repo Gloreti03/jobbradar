@@ -8,9 +8,9 @@ import { ErrorState, LoadingState } from "@/components/radar/shared";
 export const Route = createFileRoute("/print/cv/$id")({
   head: () => ({
     meta: [
-      { title: "CV — RADAR" },
+      { title: "CV — JobbRadar" },
       { name: "description", content: "Printable A4 CV." },
-      { property: "og:title", content: "CV — RADAR" },
+      { property: "og:title", content: "CV — JobbRadar" },
       { property: "og:description", content: "Printable A4 CV." },
     ],
   }),

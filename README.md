@@ -1,6 +1,6 @@
-# Build an App
+# JobbRadar Frontend
 
-Build an app that
+JobbRadar helps candidates discover relevant jobs, tailor applications and practice interviews.
 
 This project was built with [Lovable](https://lovable.dev).
 

@@ -8,9 +8,9 @@ import { ErrorState, LoadingState } from "@/components/radar/shared";
 export const Route = createFileRoute("/print/cover/$id")({
   head: () => ({
     meta: [
-      { title: "Cover letter — RADAR" },
+      { title: "Cover letter — JobbRadar" },
       { name: "description", content: "Printable A4 cover letter." },
-      { property: "og:title", content: "Cover letter — RADAR" },
+      { property: "og:title", content: "Cover letter — JobbRadar" },
       { property: "og:description", content: "Printable A4 cover letter." },
     ],
   }),

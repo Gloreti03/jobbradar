@@ -14,7 +14,7 @@ import { ScanFunnel } from "@/components/radar/ScanFunnel";
 
 export const Route = createFileRoute("/radar")({
   head: () => ({ meta: [
-    { title: "Discover opportunities — RADAR" },
+    { title: "Discover opportunities — JobbRadar" },
     { name: "description", content: "Recent Oslo opportunities, ranked against your experience and interests." },
   ] }),
   component: RadarPage,
@@ -34,7 +34,7 @@ function RadarPage() {
   });
   if (profile.isPending) return <LoadingState />;
   if (profile.isError) {
-    if (isNotFound(profile.error)) return <EmptyState icon={<Lock className="size-6" />} title="Your story comes first." body="Add your CV so Radar can look for opportunities that fit your experience." action={<Button asChild><Link to="/profile">Build your profile <ArrowRight /></Link></Button>} />;
+    if (isNotFound(profile.error)) return <EmptyState icon={<Lock className="size-6" />} title="Your story comes first." body="Add your CV so JobbRadar can look for opportunities that fit your experience." action={<Button asChild><Link to="/profile">Build your profile <ArrowRight /></Link></Button>} />;
     return <ErrorState error={profile.error} onRetry={() => profile.refetch()} />;
   }
   const data = last.data;

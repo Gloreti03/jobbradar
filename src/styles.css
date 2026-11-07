@@ -151,7 +151,7 @@
   .no-print { display: none !important; }
 }
 
-/* RADAR workspace — quiet surfaces, a bold signal. */
+/* JobbRadar workspace — quiet surfaces, a bold signal. */
 
 html { scroll-behavior: smooth; }
 button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
@@ -163,7 +163,7 @@ button:not(:disabled), a, summary { cursor: pointer; }
 .workspace-sidebar { width: 248px; height: 100vh; position: sticky; top: 0; flex-shrink: 0; display: flex; flex-direction: column; padding: 30px 20px 18px; color: var(--sidebar-foreground); background: var(--sidebar); border-right: 1px solid var(--border); z-index: 30; }
 .workspace-brand { display: flex; align-items: center; gap: 10px; padding: 0 3px; }
 .workspace-brand .radar-glyph { --primary-soft: oklch(0.94 0.02 30); flex-shrink: 0; }
-.brand-name { display: block; font-family: var(--font-display); font-size: 36px; font-weight: 400; letter-spacing: -2.6px; line-height: 1; }
+.brand-name { display: block; font-family: var(--font-display); font-size: 24px; font-weight: 400; letter-spacing: -1.5px; line-height: 1; }
 .brand-caption { display: block; color: var(--muted-foreground); font-size: 9px; margin-top: 7px; letter-spacing: -0.1px; }
 .sidebar-location { display: flex; align-items: center; gap: 8px; margin: 31px 4px 35px; font: 9px var(--font-mono); letter-spacing: 0.06em; color: var(--muted-foreground); }
 .sidebar-location .status-dot { margin-left: auto; }

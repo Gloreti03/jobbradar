@@ -13,7 +13,7 @@ function NavItem({ to, icon, label, number, disabled }: {
   to: "/profile" | "/radar" | "/applications"; icon: ReactNode; label: string; number: string; disabled?: boolean;
 }) {
   const content = <>{icon}<span>{label}</span><span className="nav-index">{disabled ? <Lock className="size-3" /> : number}</span></>;
-  return disabled ? <div className="workspace-nav-link opacity-40" title="Create your profile to unlock Radar">{content}</div> : (
+  return disabled ? <div className="workspace-nav-link opacity-40" title="Create your profile to unlock JobbRadar">{content}</div> : (
     <Link to={to} className="workspace-nav-link" activeProps={{ className: "workspace-nav-link is-active" }}>{content}</Link>
   );
 }
@@ -37,15 +37,15 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="workspace-shell">
       <a className="skip-link" href="#workspace-content">Skip to content</a>
       <aside className="workspace-sidebar no-print">
-        <Link to="/radar" className="workspace-brand" aria-label="Radar home">
+        <Link to="/radar" className="workspace-brand" aria-label="JobbRadar home">
           <RadarGlyph className="size-10" />
-          <div><span className="brand-name">radar<span className="text-sidebar-primary">.</span></span><span className="brand-caption">A little direction. A bigger future.</span></div>
+          <div><span className="brand-name">jobbradar<span className="text-sidebar-primary">.</span></span><span className="brand-caption">A little direction. A bigger future.</span></div>
         </Link>
         <div className="sidebar-location"><Globe2 className="size-3.5" /><span>OSLO WORKSPACE</span><span className="status-dot" /></div>
         <div className="sidebar-section-label">YOUR NEXT CHAPTER</div>
         <nav aria-label="Main navigation" className="workspace-navigation">
           <NavItem to="/profile" icon={<UserRound />} label="Your profile" number="01" />
-          <NavItem to="/radar" icon={<RadarIcon />} label="Radar" number="02" disabled={!hasProfile} />
+          <NavItem to="/radar" icon={<RadarIcon />} label="JobbRadar" number="02" disabled={!hasProfile} />
           <NavItem to="/applications" icon={<Briefcase />} label="Applications" number="03" />
         </nav>
         <div className="sidebar-journey">

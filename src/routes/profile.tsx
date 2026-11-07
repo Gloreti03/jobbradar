@@ -18,9 +18,9 @@ import { DocumentWarnings } from "@/components/radar/DocumentWarnings";
 export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
-      { title: "Profile — RADAR" },
+      { title: "Profile — JobbRadar" },
       { name: "description", content: "Upload your CV and set your job preferences." },
-      { property: "og:title", content: "Profile — RADAR" },
+      { property: "og:title", content: "Profile — JobbRadar" },
       { property: "og:description", content: "Upload your CV and set your job preferences." },
     ],
   }),
@@ -232,7 +232,7 @@ function ProfileEditor({ data }: { data: ProfileOut }) {
 
       <details className="radar-panel mb-6">
         <summary className="flex list-none items-center gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-info-soft text-info-foreground"><Sparkles className="size-5" /></span><span className="flex-1"><span className="block text-sm font-semibold">There might be a path you haven't thought of.</span><span className="mt-1 block text-xs text-muted-foreground">Explore your interests, beyond job titles</span></span><Plus className="size-4 text-info-foreground" /></summary>
-        <p className="mb-4 mt-6 border-t pt-5 text-sm text-muted-foreground">Tell us what you enjoy doing, even if you do not know the job title. Save changes to refine your profile and search preferences, then run Radar again. Interests are not treated as demonstrated skills.</p>
+        <p className="mb-4 mt-6 border-t pt-5 text-sm text-muted-foreground">Tell us what you enjoy doing, even if you do not know the job title. Save changes to refine your profile and search preferences, then run JobbRadar again. Interests are not treated as demonstrated skills.</p>
         <div className="space-y-4">
           {DISCOVERY_QUESTIONS.map((question, i) => <div key={question}>
             <Label htmlFor={`discovery-${i}`}>{question}</Label>

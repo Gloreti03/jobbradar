@@ -17,9 +17,9 @@ import { RequirementEvidence } from "@/components/radar/RequirementEvidence";
 export const Route = createFileRoute("/applications/$id")({
   head: () => ({
     meta: [
-      { title: "Application — RADAR" },
+      { title: "Application — JobbRadar" },
       { name: "description", content: "Edit your tailored CV and cover letter, then apply." },
-      { property: "og:title", content: "Application — RADAR" },
+      { property: "og:title", content: "Application — JobbRadar" },
       { property: "og:description", content: "Edit your tailored CV and cover letter, then apply." },
     ],
   }),

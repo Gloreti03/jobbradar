@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from db import get_db
 from schemas import ProfileAnswers, ProfileOut, ProfileUpdate
 from services.profile_extract import (
-    UnreadableDocument,
+    GarbledText,
+    NotAPdf,
     apply_answers,
     extract_profile,
     file_to_text,
@@ -57,20 +58,26 @@ def upload_profile(
     extra_text: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
-    """CV PDF + extra files (PDF/.txt/.md) + free text -> profile (~10 s)."""
+    """CV PDF + extra files (PDF/.txt/.md) + free text -> profile (~10-20 s).
+    Files whose text cannot be read are skipped and listed in `warnings`."""
     cv_text = ""
+    warnings: list[str] = []
     if cv is not None and cv.filename:
         data = cv.file.read(MAX_UPLOAD_BYTES + 1)
         if len(data) > MAX_UPLOAD_BYTES:
             raise HTTPException(status_code=413, detail="CV file is larger than 10 MB")
         try:
             cv_text = pdf_to_text(data)
-        except UnreadableDocument:
+        except NotAPdf:
             raise HTTPException(status_code=400, detail="The CV must be a PDF file")
+        except GarbledText as err:
+            warnings.append(f"{cv.filename}: the text could not be read ({err}). Paste your CV text in 'More about you'.")
 
     extra_parts = [extra_text.strip()] if extra_text.strip() else []
     for f in extra_files:
-        text = file_to_text(f.filename or "", f.file.read(MAX_UPLOAD_BYTES))
+        text, warning = file_to_text(f.filename or "", f.file.read(MAX_UPLOAD_BYTES))
+        if warning:
+            warnings.append(warning)
         if text.strip():
             extra_parts.append(f"--- {f.filename} ---\n{text.strip()}")
     extra = "\n\n".join(extra_parts)
@@ -78,8 +85,9 @@ def upload_profile(
     if not cv_text.strip() and not extra:
         raise HTTPException(
             status_code=422,
-            detail="Could not read any text from the CV. Paste your CV text in the 'more about you' field.",
+            detail=(warnings[0] if warnings else "Could not read any text from the CV.")
+            + " Paste your CV text in the 'More about you' field.",
         )
 
     profile = extract_profile(cv_text, extra)
-    return to_out(save_profile(db, profile, extra))
+    return to_out(save_profile(db, profile, extra), warnings)

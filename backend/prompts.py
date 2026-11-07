@@ -30,11 +30,28 @@ Field guidance:
 - dates as "YYYY-MM" (or "YYYY" if month unknown); end_date null if ongoing.
 - languages: level as "native" or CEFR (A1..C2); if the CV gives a vague level, map it
   conservatively (e.g. "basic" -> "A2").
+- education.details: relevant courses (with grade if given), thesis, awards. If the extra
+  material contains a transcript / list of exams, put the courses most relevant for jobs here
+  (max 8 per degree, e.g. "Machine Learning (30/30)").
+- projects: every project in the CV or extra material, including course and group projects,
+  with the tools actually named.
 - preferences: only what the candidate states or clearly implies; otherwise empty.
-- search_terms: 20-30 job-title / skill keywords to search job ads, in BOTH English and
-  Norwegian (e.g. "data analyst", "dataanalytiker", "utvikler", "developer").
-- missing_info: at most 5 short questions to ask the candidate about information that
-  would most improve job matching (e.g. work permit, Norwegian level, preferred roles)."""
+  preferences.industries: sectors or interests the candidate states (e.g. "energy", "public sector").
+- search_terms: 20-30 job-title keywords used to find ads, in BOTH English and Norwegian:
+  1) the roles the candidate targets (e.g. "data analyst", "dataanalytiker");
+  2) ADJACENT job titles the candidate may not think of but that fit their real background and
+     seniority (e.g. for a data/business student: "pricing analyst", "business analyst",
+     "BI analyst", "insight analyst", "commercial analyst", "forretningsanalytiker");
+  3) internship / graduate variants if the candidate is a student ("intern", "trainee",
+     "graduate", "sommerjobb", "nyutdannet").
+  Job titles only, no single tools (no "Python", "SQL").
+- missing_info: at most 5 short questions for the candidate:
+  - at most 2 practical ones, only if the answer is unknown (work permit, Norwegian level,
+    availability, preferred roles);
+  - the others must surface skills: each one names a SPECIFIC course, project or activity from
+    the material and asks what the candidate actually did there (tools, data, results), e.g.
+    "In your Machine Learning course at LUISS, did you build a model yourself? With which tools
+    and data?"."""
 
 PROFILE_EXTRACT_USER = """\
 CV TEXT:
@@ -51,7 +68,11 @@ You update a job-seeker profile with the candidate's answers to follow-up questi
 
 How to update:
 - Change only the fields an answer is about (e.g. a Norwegian level -> languages,
-  "I want hybrid work" -> preferences.work_modes, a start date or work permit -> summary).
+  "I want hybrid work" -> preferences.work_modes, a start date or work permit -> summary,
+  "I like the energy sector" -> preferences.industries).
+- An answer describing what the candidate did in a course or project adds that to the matching
+  project (description, tools) or education.details, and new skills/tools to skills/tools.
+  If it names new job titles the candidate wants, add them to preferences.roles and search_terms.
 - Keep every other field exactly as it is.
 - languages: level as "native" or CEFR (A1..C2), mapped conservatively.
 - Return the full updated profile. missing_info is handled by the caller: copy it unchanged.
@@ -70,38 +91,55 @@ ANSWERS FROM THE CANDIDATE:
 # ---------------------------------------------------------------------------
 
 TAILOR_SYSTEM = f"""\
-You tailor a CV and write a cover letter for one specific job ad.
+You tailor a CV and write a cover letter for one specific job ad, in three steps.
+The goal: a recruiter immediately sees why THIS candidate fits THIS ad, using only true facts.
 
 {NO_INVENTION_RULES}
 
-What you MAY do (CV and cover letter):
-- Reorder bullets, skills, experiences and projects so the most relevant come first.
-- Shorten or drop items that are not relevant.
-- Rephrase a bullet with the ad's vocabulary ONLY if the meaning stays identical
+STEP 1 - requirement_map (write it first, it drives everything else):
+- List the 5-8 most important requirements of the ad (skills, experience, education,
+  languages, tasks), each with importance "required" or "nice_to_have".
+- For each one give evidence: ONE short quote (a second only if it adds something) copied WORD FOR WORD from the candidate profile or
+  extra material (max 20 words, no paraphrasing, no "..."). The quotes are checked by code:
+  a quote that is not literally in the material is deleted.
+- status: "met" (clear evidence), "partial" (related but not the same, e.g. Python for
+  "Python and PyTorch"), "missing" (no evidence -> evidence must be []).
+
+STEP 2 - CV, built from the map:
+- headline: aimed at this role, using the candidate's real background.
+- summary: 2-3 sentences that lead with the evidence for the top "required" items.
+- skills: those matching the ad first; drop the unrelated ones.
+- experiences: keep every real experience in reverse chronological order (dates are fixed by code);
+  inside each, put the bullets that are evidence first, drop bullets that are irrelevant
+  (keep at least one per experience).
+- projects: the projects that are evidence first; drop unrelated ones if there are more than 3.
+- education: relevant courses first in details.
+- You may rephrase a bullet with the ad's vocabulary ONLY if the meaning stays identical
   (e.g. "Ran A/B tests on promotional emails" -> "Ran A/B tests (experimentation) on promotional emails").
 
-What you must NOT do — every sentence must be traceable to a specific line of the profile:
-- Do not add details about HOW something was done: no methods, features, techniques,
-  evaluation strategies, challenges, lessons learned or insights that the profile does not state.
-- Do not add results, outcomes, numbers, audiences or purposes that are not written in the profile.
-- Do not turn a skill into an experience ("knows Docker" is NOT "deployed models with Docker").
-- Do not describe the candidate's personality, motivation or soft skills beyond what the
-  profile or extra material says.
-Example: profile says "Forecast hourly bike demand per station using gradient boosting".
+STEP 3 - cover letter (max 250 words), addressed to the company, signed with the candidate's name:
+- Opening: the role and who the candidate is (facts only).
+- Body: 2 short paragraphs, each linking 1-2 top "required" requirements to their evidence,
+  explicitly and naturally ("You are looking for X. In Y I did Z.").
+- One honest sentence on the main missing requirement(s) and what the candidate wants to learn.
+- Closing line.
+
+Never, in CV or letter:
+- add details about HOW something was done (methods, features, techniques, evaluation,
+  challenges, lessons learned) that the material does not state;
+- add results, numbers, audiences or purposes that are not written in the material;
+- turn a skill into an experience ("knows Docker" is NOT "deployed models with Docker");
+- describe personality, motivation or soft skills beyond what the material says.
+Example: material says "Forecast hourly bike demand per station using gradient boosting".
   FORBIDDEN: "I engineered lag and weather features and learned that evaluation matters most".
   ALLOWED:   "I built a gradient boosting model forecasting hourly bike demand per station".
-When the profile is thin on a topic, write less — a shorter letter is better than an invented one.
+When the material is thin on a topic, write less.
 
 Output:
-- Document language: "{{language}}" ("no" = Norwegian Bokmål, "en" = English).
-- Cover letter: max 250 words, addressed to the company, signed with the candidate's name.
-  It connects the ad's needs to the candidate's real facts; it may say what the candidate
-  wants to learn only for requirements listed in missing_requirements.
+- Document language: "{{language}}" ("no" = Norwegian Bokmål, "en" = English); requirement_map in English.
 - notes.keywords_covered: ad keywords the documents now cover truthfully.
-- notes.missing_requirements: at most 6 ad requirements the candidate does not meet,
-  most important first (required before nice-to-have). Group related tools in one item
-  (e.g. "Snowflake, MLflow, Streamlit"). Each item max 12 words.
-- notes.changes: short list of what you changed compared to the original profile.
+- notes.changes: max 5 short items: what you changed compared to the original profile and why
+  (e.g. "Moved the pricing analysis bullet first: the ad asks for pricing experience").
 
 Before answering, re-read every sentence of the CV and cover letter and delete any detail
 you cannot point to in the profile or extra material."""

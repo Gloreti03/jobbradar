@@ -1,25 +1,100 @@
 """C — Profile + job ad -> tailored CV + cover letter + notes.
 
-On top of the prompt rules, there is a safety net against invention here:
-name, contacts, languages, dates and companies ALWAYS come from the profile, never from the model.
+One model call in three steps: requirement_map (requirement -> verbatim evidence) first,
+then the CV and the cover letter built from it.
+
+Safety nets in code, on top of the prompt rules:
+- every evidence quote must literally exist in the candidate's material, otherwise it is dropped
+  (and a requirement left without evidence becomes "missing");
+- name, contacts, languages, dates and companies ALWAYS come from the profile, never from the model.
 """
 
 import json
+import logging
+import re
+from typing import Any
 
 from llm import complete_json
 from prompts import TAILOR_SYSTEM, TAILOR_USER
-from schemas import ApplicationNotes, DocLanguage, JobOut, Profile, Schema, TailoredCV
+from schemas import ApplicationNotes, DocLanguage, JobOut, Profile, RequirementMatch, Schema, TailoredCV
+
+log = logging.getLogger("tailor")
 
 MAX_DESCRIPTION_CHARS = 12_000
 MAX_MISSING_REQUIREMENTS = 6  # more than this does not fit on a card
+MIN_WORD_OVERLAP = 0.85  # share of a quote's words that must appear in the material
 NORWEGIAN_OK_LEVELS = {"native", "c2", "c1", "b2"}
 NORWEGIAN_NAMES = {"norwegian", "norsk", "bokmål", "bokmal", "nynorsk"}
 
 
+class _ModelNotes(Schema):
+    keywords_covered: list[str] = []
+    changes: list[str] = []
+
+
 class TailorOutput(Schema):
+    # field order matters: the model writes the map first and builds the documents on it
+    requirement_map: list[RequirementMatch] = []
     cv: TailoredCV
     cover_letter: str
-    notes: ApplicationNotes
+    notes: _ModelNotes = _ModelNotes()
+
+
+def _normalize(text: str) -> str:
+    text = text.lower().replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
+    text = re.sub(r"[–—]", "-", text)
+    return re.sub(r"\s+", " ", text).strip(" .,;:")
+
+
+def _strings(value: Any) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        return [s for v in value.values() for s in _strings(v)]
+    if isinstance(value, list):
+        return [s for v in value for s in _strings(v)]
+    return []
+
+
+def candidate_corpus(profile: Profile, extra_text: str) -> str:
+    """All the candidate's facts as one normalized string (what evidence quotes are checked against)."""
+    return _normalize(" \n ".join(_strings(profile.model_dump(mode="json")) + [extra_text]))
+
+
+def is_grounded(quote: str, corpus: str, corpus_words: set[str]) -> bool:
+    """True if the quote is literally in the material (or nearly: >= 85% of its words, min 3 words)."""
+    q = _normalize(quote)
+    if len(q) < 3:
+        return False
+    if q in corpus:
+        return True
+    words = [w for w in re.findall(r"[^\W_]+", q) if len(w) >= 3]
+    if len(words) < 3:
+        return False
+    return sum(w in corpus_words for w in words) / len(words) >= MIN_WORD_OVERLAP
+
+
+def verify_requirement_map(
+    items: list[RequirementMatch], profile: Profile, extra_text: str
+) -> tuple[list[RequirementMatch], int]:
+    """Drops evidence not found in the material; a met/partial item left without evidence becomes missing.
+    -> (verified map, number of dropped quotes)."""
+    corpus = candidate_corpus(profile, extra_text)
+    corpus_words = set(re.findall(r"[^\W_]+", corpus))
+    dropped = 0
+    verified = []
+    for item in items:
+        evidence = [q for q in item.evidence if is_grounded(q, corpus, corpus_words)]
+        dropped += len(item.evidence) - len(evidence)
+        status = item.status if evidence else "missing"
+        verified.append(item.model_copy(update={"evidence": evidence if status != "missing" else [], "status": status}))
+    return verified, dropped
+
+
+def missing_from_map(items: list[RequirementMatch]) -> list[str]:
+    missing = [i for i in items if i.status == "missing"]
+    missing.sort(key=lambda i: i.importance != "required")  # required first, order kept otherwise
+    return [i.requirement for i in missing][:MAX_MISSING_REQUIREMENTS]
 
 
 def choose_language(job: JobOut, profile: Profile) -> DocLanguage:
@@ -81,7 +156,8 @@ def enforce_facts(cv: TailoredCV, profile: Profile) -> tuple[TailoredCV, list[st
     return cv, removed
 
 
-def tailor(profile: Profile, job: JobOut, extra_text: str = "") -> tuple[DocLanguage, TailorOutput]:
+def tailor(profile: Profile, job: JobOut, extra_text: str = "") -> tuple[DocLanguage, TailoredCV, str, ApplicationNotes]:
+    """-> (document language, tailored CV, cover letter, notes with the verified requirement map)."""
     language = choose_language(job, profile)
     system = TAILOR_SYSTEM.replace("{language}", language)
     profile_json = json.dumps(profile.model_dump(exclude={"search_terms", "missing_info"}), ensure_ascii=False)
@@ -94,10 +170,20 @@ def tailor(profile: Profile, job: JobOut, extra_text: str = "") -> tuple[DocLang
         location=job.location or "(unknown)",
         description=(job.description or "(no description available)")[:MAX_DESCRIPTION_CHARS],
     )
-    # fast model: ~15 s vs ~60-100 s for the smart one, same quality in tests (BLUEPRINT: < 30 s)
-    out = complete_json("fast", system, user, TailorOutput, temperature=0.2, max_tokens=8000)
-    out.notes.missing_requirements = out.notes.missing_requirements[:MAX_MISSING_REQUIREMENTS]
-    out.cv, removed = enforce_facts(out.cv, profile)
+    # fast model: ~15-20 s vs ~60-100 s for the smart one, same quality in tests (BLUEPRINT: < 30 s)
+    out = complete_json("fast", system, user, TailorOutput, temperature=0.2, max_tokens=10000)
+
+    requirement_map, dropped = verify_requirement_map(out.requirement_map, profile, extra_text)
+    if dropped:
+        log.warning("Dropped %d evidence quote(s) not found in the candidate's material", dropped)
+    cv, removed = enforce_facts(out.cv, profile)
+    changes = list(out.notes.changes)
     if removed:
-        out.notes.changes.append("Removed items not found in your profile: " + "; ".join(removed))
-    return language, out
+        changes.append("Removed items not found in your profile: " + "; ".join(removed))
+    notes = ApplicationNotes(
+        keywords_covered=out.notes.keywords_covered,
+        missing_requirements=missing_from_map(requirement_map),
+        changes=changes,
+        requirement_map=requirement_map,
+    )
+    return language, cv, out.cover_letter, notes

@@ -84,6 +84,7 @@ class Preferences(Schema):
     cities: list[str] = []
     seniority: str | None = None  # "intern" | "junior" | "mid" | "senior"
     work_modes: list[str] = []  # "onsite" | "hybrid" | "remote"
+    industries: list[str] = []  # sectors / interests the candidate stated, e.g. "energy", "public sector"
 
 
 class Profile(Schema):
@@ -111,6 +112,8 @@ class ProfileOut(Schema):
     profile: Profile
     extra_text: str = ""
     updated_at: datetime
+    # files that could not be read properly in the last upload (the UI shows them to the user)
+    warnings: list[str] = []
 
 
 class ProfileUpdate(Schema):
@@ -175,6 +178,19 @@ class RadarResult(Schema):
     match: MatchOut
 
 
+class RadarFunnel(Schema):
+    """Jobs left after each step of the Radar, in order. Shows WHY there are few results."""
+
+    total: int  # active jobs in the catalogue
+    recent: int  # posted within the window (or unknown date)
+    location: int  # in the Oslo area / Norway / remote
+    language: int  # after the English-only filter (= location if off)
+    keywords: int  # title matches the profile's search terms
+    deduplicated: int
+    live: int  # still open (liveness check)
+    ranked: int  # sent to the AI ranking
+
+
 class RadarResponse(Schema):
     days_requested: int
     days_used: int  # > days_requested if the window was widened
@@ -183,6 +199,8 @@ class RadarResponse(Schema):
     candidates_count: int  # passed the filters and were sent to ranking
     results: list[RadarResult]  # max 15, sorted by score
     generated_at: datetime
+    funnel: RadarFunnel | None = None  # how many jobs survive each step (filled by the Radar)
+
 
 
 class ApplicationRef(Schema):
@@ -233,10 +251,21 @@ class TailoredCV(Schema):
     languages: list[LanguageSkill] = []
 
 
+class RequirementMatch(Schema):
+    """One requirement of the ad and the proof for it, quoted from the candidate's material."""
+
+    requirement: str
+    importance: Literal["required", "nice_to_have"]
+    status: Literal["met", "partial", "missing"]
+    # verbatim quotes from the profile / extra material; checked in code, never invented
+    evidence: list[str] = []
+
+
 class ApplicationNotes(Schema):
     keywords_covered: list[str] = []
     missing_requirements: list[str] = []  # gaps: NEVER claimed in the CV
     changes: list[str] = []  # "what I changed" compared to the profile
+    requirement_map: list[RequirementMatch] = []  # "why this CV fits": requirement -> proof
 
 
 class Snapshot(Schema):

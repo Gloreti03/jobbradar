@@ -180,7 +180,10 @@ function ProfileEditor({ data }: { data: ProfileOut }) {
       setDiscovery({});
       qc.invalidateQueries({ queryKey: ["job"] });
       qc.setQueryData(["radar", "last"], null);
-      toast.success("Profile saved");
+      toast.success("Profile saved", {
+        description: "Run Radar again to see matches based on your updated profile.",
+        duration: 7000,
+      });
     },
     onError: (e) => toast.error(`Couldn't save: ${e.message}`),
   });
@@ -196,7 +199,7 @@ function ProfileEditor({ data }: { data: ProfileOut }) {
               <FileUp /> {reupload ? "Cancel" : "Upload new CV"}
             </Button>
             <Button disabled={!dirty || save.isPending} onClick={() => save.mutate()}>
-              {save.isPending ? <Loader2 className="animate-spin" /> : <Save />} {save.isPending ? "Updating your profile…" : "Save changes"}
+              {save.isPending ? <Loader2 className="animate-spin" /> : <Save />} {save.isPending ? "Saving…" : "Save changes"}
             </Button>
           </>
         }
@@ -376,7 +379,7 @@ function ProfileEditor({ data }: { data: ProfileOut }) {
           </Button>
         </div>
       </div>
-      {dirty && <div className="profile-savebar"><div><p className="text-sm font-semibold">Your next move starts with a clear profile.</p><p className="mt-1 text-xs text-muted-foreground">Save your changes before running a new scan.</p></div><Button disabled={save.isPending} onClick={() => save.mutate()}>{save.isPending ? <Loader2 className="animate-spin" /> : <Save />}{save.isPending ? "Updating…" : "Save changes"}</Button></div>}
+      {dirty && <div className="profile-savebar"><div><p className="text-sm font-semibold">Your next move starts with a clear profile.</p><p className="mt-1 text-xs text-muted-foreground">{save.isPending ? "Reviewing your updates. This may take a few seconds." : "Save your changes before running a new scan."}</p></div><Button disabled={save.isPending} onClick={() => save.mutate()}>{save.isPending ? <Loader2 className="animate-spin" /> : <Save />}{save.isPending ? "Saving…" : "Save changes"}</Button></div>}
     </fieldset>
   );
 }

@@ -24,7 +24,9 @@ log = logging.getLogger(__name__)
 MAX_CV_CHARS = 30_000
 MAX_EXTRA_CHARS = 15_000
 MAX_MISSING_INFO = 5
-MAX_SEARCH_TERMS = 30
+MAX_SEARCH_TERMS = 30  # from the CV
+MAX_ADDED_TERMS = 8  # added by one save of answers / notes
+MAX_TOTAL_TERMS = 50  # hard cap after many saves
 TEXT_EXTENSIONS = (".txt", ".md")
 
 
@@ -277,7 +279,11 @@ def apply_answers(profile: Profile, answers: list[MissingInfoAnswer]) -> Profile
     updated.contacts = profile.contacts
     answered = {a.question.strip().lower() for a in answers}
     updated.missing_info = [q for q in profile.missing_info if q.strip().lower() not in answered]
-    updated.search_terms = _dedupe(updated.search_terms or profile.search_terms)[:MAX_SEARCH_TERMS]
+    # the existing terms are never dropped (the model sometimes rewrites the list): the answers only
+    # ADD job titles, so the Radar keeps finding the old roles and also finds the new ones
+    before = {t.strip().lower() for t in profile.search_terms}
+    added = [t for t in updated.search_terms if t.strip().lower() not in before][:MAX_ADDED_TERMS]
+    updated.search_terms = _dedupe(profile.search_terms + added)[:MAX_TOTAL_TERMS]
     updated.skills = _dedupe(updated.skills)
     updated.tools = _dedupe(updated.tools)
     return updated

@@ -73,6 +73,11 @@ How to update:
 - An answer describing what the candidate did in a course or project adds that to the matching
   project (description, tools) or education.details, and new skills/tools to skills/tools.
   If it names new job titles the candidate wants, add them to preferences.roles and search_terms.
+- The Radar finds jobs ONLY through search_terms and preferences.roles. So when an answer
+  states an interest, a wish or a sector (e.g. "I enjoy improving processes", "I care about
+  energy"), also add 2-4 fitting job titles to search_terms, in English and Norwegian
+  (e.g. "process analyst", "energy analyst", "energianalytiker"), at a seniority that fits the
+  profile. Keep every existing search term and add the new ones at the end.
 - Keep every other field exactly as it is.
 - languages: level as "native" or CEFR (A1..C2), mapped conservatively.
 - Return the full updated profile. missing_info is handled by the caller: copy it unchanged.

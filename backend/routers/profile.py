@@ -1,10 +1,12 @@
 """A — Profile (owner: Gabriele)."""
 
+import re
+
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from db import get_db
-from schemas import ProfileAnswers, ProfileOut, ProfileUpdate
+from schemas import MissingInfoAnswer, ProfileAnswers, ProfileOut, ProfileUpdate
 from services.profile_extract import (
     GarbledText,
     NotAPdf,
@@ -30,9 +32,29 @@ def get_profile(db: Session = Depends(get_db)):
     return to_out(row)
 
 
+NOTES_QUESTION = "More about you (free notes written by the candidate on the profile page)"
+_SECTION = re.compile(r"(?:^|\n)--- [^\n]+ ---\r?\n")
+
+
+def _notes(extra_text: str | None) -> str:
+    """The candidate's free notes: the part of extra_text before the first '--- file ---' section
+    (document text and earlier answers follow; same split as the frontend)."""
+    text = extra_text or ""
+    marker = _SECTION.search(text)
+    return (text[: marker.start()] if marker else text).strip()
+
+
 @router.put("", response_model=ProfileOut)
 def update_profile(body: ProfileUpdate, db: Session = Depends(get_db)):
-    return to_out(save_profile(db, body.profile, body.extra_text))
+    """Manual edits are saved as they are. If the free notes changed, the model also reads them
+    and updates the profile (skills, preferences, search terms), so the notes reach the Radar
+    and not only the tailored applications (~5-10 s in that case)."""
+    profile = body.profile
+    row = get_profile_row(db)
+    new_notes = _notes(body.extra_text)
+    if body.extra_text is not None and new_notes and new_notes != _notes(row.extra_text if row else ""):
+        profile = apply_answers(profile, [MissingInfoAnswer(question=NOTES_QUESTION, answer=new_notes)])
+    return to_out(save_profile(db, profile, body.extra_text))
 
 
 @router.post("/answers", response_model=ProfileOut)

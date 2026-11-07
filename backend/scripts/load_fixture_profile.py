@@ -1,5 +1,5 @@
-"""Salva fixtures/profile.json nel DB locale, per lavorare senza caricare un CV.
-Uso (da backend/):  uv run python scripts/load_fixture_profile.py
+"""Saves fixtures/profile.json into the local DB, to work without uploading a CV.
+Usage (from backend/):  uv run python scripts/load_fixture_profile.py
 """
 
 import sys

@@ -1,6 +1,6 @@
-"""D — Colloquio simulato (owner: Matilde). STUB: segue il piano di fixtures/interview.json.
+"""D — Mock interview (owner: Matilde). STUB: follows the plan in fixtures/interview.json.
 
-Lo stub tiene il numero di domanda in memoria (si azzera al riavvio).
+The stub keeps the question number in memory (resets on restart).
 """
 
 from fastapi import APIRouter
@@ -16,7 +16,7 @@ from schemas import (
 
 router = APIRouter(prefix="/interview", tags=["interview"])
 
-_progress: dict[int, int] = {}  # application_id -> indice della domanda in corso
+_progress: dict[int, int] = {}  # application_id -> index of the current question
 
 
 def _interviewer_messages() -> list[str]:
@@ -39,7 +39,7 @@ def start_interview(application_id: int, body: InterviewStartRequest | None = No
 
 @router.post("/{application_id}/turn", response_model=InterviewTurnResponse)
 def interview_turn(application_id: int, body: InterviewTurnRequest):
-    messages = _interviewer_messages()  # 6 domande + messaggio di chiusura
+    messages = _interviewer_messages()  # 6 questions + closing message
     index = min(_progress.get(application_id, 0) + 1, len(messages) - 1)
     _progress[application_id] = index
     return {

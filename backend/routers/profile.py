@@ -1,4 +1,4 @@
-"""A — Profilo (owner: Gabriele)."""
+"""A — Profile (owner: Gabriele)."""
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
@@ -33,7 +33,7 @@ def upload_profile(
     extra_text: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
-    """CV PDF + file extra (PDF/.txt/.md) + testo libero → profilo (10-30 s)."""
+    """CV PDF + extra files (PDF/.txt/.md) + free text -> profile (~10 s)."""
     cv_text = ""
     if cv is not None and cv.filename:
         data = cv.file.read(MAX_UPLOAD_BYTES + 1)

@@ -1,6 +1,6 @@
-"""Lettura annunci/candidature dal DB e conversione nella forma di ApplicationOut.
+"""Reads jobs/applications from the DB and converts them to the ApplicationOut shape.
 
-Usato da routers/applications.py (Gabriele) e routers/tracking.py (Matilde):
+Used by routers/applications.py (Gabriele) and routers/tracking.py (Matilde):
     from services.application_store import application_out, get_application_row
 """
 
@@ -15,12 +15,12 @@ from schemas import JobOut
 
 
 def get_job_row(db: Session, job_id: int) -> JobRow:
-    """Annuncio dal DB. Finché il Radar non ha riempito il DB (BLUEPRINT sez. 9) un id che esiste
-    solo in fixtures/jobs.json viene copiato nel DB, così la candidatura ha un annuncio vero a cui puntare."""
+    """Job from the DB. Until the Radar has filled the DB (BLUEPRINT sec. 9), an id that exists
+    only in fixtures/jobs.json is copied into the DB, so the application has a real job to point to."""
     row = db.get(JobRow, job_id)
     if row is not None:
         return row
-    job = JobOut.model_validate(fixture_job(job_id))  # 404 se non esiste neanche lì
+    job = JobOut.model_validate(fixture_job(job_id))  # 404 if it does not exist there either
     row = JobRow(**job.model_dump())
     db.add(row)
     db.commit()
@@ -36,7 +36,7 @@ def get_application_row(db: Session, application_id: int) -> ApplicationRow:
 
 
 def application_out(db: Session, row: ApplicationRow) -> dict[str, Any]:
-    """Riga DB → forma di ApplicationOut (con l'annuncio incluso)."""
+    """DB row -> ApplicationOut shape (job included)."""
     job = db.get(JobRow, row.job_id)
     return {
         "id": row.id,

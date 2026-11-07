@@ -1,4 +1,4 @@
-# --- Segreti ---
+# --- Secrets ---
 .env
 .env.*
 !.env.example
@@ -12,12 +12,12 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 
-# --- Database locale (ognuno ha il suo; si popola con scan.py --load-seed) ---
+# --- Local database (everyone has their own; populate it with scan.py --load-seed) ---
 *.db
 *.db-journal
 *.sqlite3
 
-# --- Node (estensione / eventuali tool) ---
+# --- Node (extension / tooling) ---
 node_modules/
 
 # --- Editor / OS ---

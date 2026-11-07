@@ -1,4 +1,4 @@
-"""Lettura dei file di fixtures/ (usati dagli stub finché la logica vera non è pronta)."""
+"""Reads the files in fixtures/ (used by the stubs until the real logic is ready)."""
 
 import json
 from typing import Any
@@ -9,7 +9,7 @@ from config import FIXTURES_DIR
 
 
 def load_fixture(name: str) -> Any:
-    """`load_fixture("profile")` → contenuto di fixtures/profile.json (copia nuova a ogni chiamata)."""
+    """`load_fixture("profile")` -> contents of fixtures/profile.json (a fresh copy on every call)."""
     return json.loads((FIXTURES_DIR / f"{name}.json").read_text(encoding="utf-8"))
 
 

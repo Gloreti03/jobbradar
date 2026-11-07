@@ -1,6 +1,6 @@
-"""Lettura/scrittura del profilo nel DB. Un solo utente demo → una sola riga (id 1).
+"""Read/write the profile in the DB. A single demo user -> a single row (id 1).
 
-Per gli altri moduli (ranking, tailoring, colloquio):
+For the other modules (ranking, tailoring, interview):
     from services.profile_store import get_profile
     profile = get_profile(db)   # Profile | None
 """
@@ -25,7 +25,7 @@ def get_profile(db: Session) -> Profile | None:
 
 
 def save_profile(db: Session, profile: Profile, extra_text: str | None = None) -> ProfileRow:
-    """Crea o aggiorna il profilo. extra_text=None lascia quello esistente."""
+    """Create or update the profile. extra_text=None keeps the existing one."""
     row = get_profile_row(db)
     data: dict[str, Any] = profile.model_dump(mode="json")
     if row is None:
@@ -41,5 +41,5 @@ def save_profile(db: Session, profile: Profile, extra_text: str | None = None) -
 
 
 def to_out(row: ProfileRow) -> dict[str, Any]:
-    """Riga DB → forma di ProfileOut."""
+    """DB row -> ProfileOut shape."""
     return {"id": row.id, "profile": row.data, "extra_text": row.extra_text, "updated_at": row.updated_at}

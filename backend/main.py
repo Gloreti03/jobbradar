@@ -1,5 +1,5 @@
-"""App FastAPI. Avvio (da backend/):  uv run uvicorn main:app --reload --port 8000
-Documentazione interattiva: http://localhost:8000/docs
+"""App FastAPI. Run (from backend/):  uv run uvicorn main:app --reload --port 8000
+Interactive docs: http://localhost:8000/docs
 """
 
 from contextlib import asynccontextmanager
@@ -27,7 +27,7 @@ app = FastAPI(title="RADAR API", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[FRONTEND_ORIGIN],
-    # qualunque porta su localhost (Vite può usare 5174...) + estensione Opera/Chrome
+    # any port on localhost (Vite may use 5174...) + Opera/Chrome extension
     allow_origin_regex=r"^(http://(localhost|127\.0\.0\.1)(:\d+)?|chrome-extension://.*)$",
     allow_credentials=True,
     allow_methods=["*"],
@@ -35,7 +35,7 @@ app.add_middleware(
 )
 
 
-# --- Errori sempre come {"error": "messaggio"} ---
+# --- Errors always shaped as {"error": "message"} ---
 
 
 @app.exception_handler(StarletteHTTPException)
@@ -60,7 +60,7 @@ async def unhandled_error(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content={"error": f"Internal error: {exc}"})
 
 
-# --- Router (imports PRIMA di jobs: /jobs/import vs /jobs/{job_id}) ---
+# --- Routers (imports BEFORE jobs: /jobs/import vs /jobs/{job_id}) ---
 
 app.include_router(profile.router)
 app.include_router(applications.router)

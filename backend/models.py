@@ -1,9 +1,9 @@
-"""Tabelle SQLite (BLUEPRINT sez. 5). Chi le cambia lo dice nel gruppo (owner: Gabriele).
+"""SQLite tables (BLUEPRINT sec. 5). Whoever changes them tells the group (owner: Gabriele).
 
-Le colonne JSON contengono i dict dei modelli in schemas.py
-(es. profiles.data = Profile, applications.cv = TailoredCV).
-Nota: non ci sono migrazioni → se cambia una tabella, cancellare radar.db
-e ricaricare gli annunci con `scripts/scan.py --load-seed`.
+JSON columns hold dicts of the models in schemas.py
+(e.g. profiles.data = Profile, applications.cv = TailoredCV).
+Note: there are no migrations -> if a table changes, delete radar.db
+and reload the jobs with `scripts/scan.py --load-seed`.
 """
 
 from datetime import datetime, timezone

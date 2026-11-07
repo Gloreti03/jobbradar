@@ -1,4 +1,4 @@
-"""C — Candidature (owner: Gabriele)."""
+"""C — Applications (owner: Gabriele)."""
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -22,7 +22,7 @@ def list_applications(db: Session = Depends(get_db)):
 
 @router.post("", response_model=ApplicationOut, status_code=201)
 def create_application(body: ApplicationCreate, db: Session = Depends(get_db)):
-    """Genera CV + cover letter su misura per l'annuncio (10-30 s). Stato iniziale: draft."""
+    """Generate a tailored CV + cover letter for the job (~20 s). Initial status: draft."""
     profile = get_profile(db)
     if profile is None:
         raise HTTPException(status_code=404, detail="No profile yet: upload your CV first")
@@ -52,8 +52,8 @@ def get_application(application_id: int, db: Session = Depends(get_db)):
 
 @router.patch("/{application_id}", response_model=ApplicationOut)
 def patch_application(application_id: int, body: ApplicationPatch, db: Session = Depends(get_db)):
-    """Salva le modifiche dell'utente a CV / lettera / stato (tracker).
-    Per "I applied" usare POST /applications/{id}/applied, che salva anche lo snapshot."""
+    """Save the user's edits to CV / letter / status (tracker).
+    For "I applied" use POST /applications/{id}/applied, which also saves the snapshot."""
     row = get_application_row(db, application_id)
     if body.cv is not None:
         row.cv = body.cv.model_dump(mode="json")

@@ -46,7 +46,7 @@ function UploadScreen({ firstUse, onDone }: { firstUse?: boolean; onDone?: (prof
       qc.setQueryData(qk.profile, p);
       qc.setQueryData(["radar", "last"], null);
       toast.success("Profile created from your CV");
-      if (p.warnings?.length) toast.warning("Some documents could not be read. Review the warnings on your profile.");
+      if (p.warnings?.length) toast.warning("Your documents need a review. Check the notices on your profile.");
       onDone?.(p);
     },
     onError: (e) => toast.error(e.message),

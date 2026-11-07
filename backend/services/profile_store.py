@@ -40,6 +40,12 @@ def save_profile(db: Session, profile: Profile, extra_text: str | None = None) -
     return row
 
 
-def to_out(row: ProfileRow) -> dict[str, Any]:
+def to_out(row: ProfileRow, warnings: list[str] | None = None) -> dict[str, Any]:
     """DB row -> ProfileOut shape."""
-    return {"id": row.id, "profile": row.data, "extra_text": row.extra_text, "updated_at": row.updated_at}
+    return {
+        "id": row.id,
+        "profile": row.data,
+        "extra_text": row.extra_text,
+        "updated_at": row.updated_at,
+        "warnings": warnings or [],
+    }

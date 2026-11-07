@@ -7,6 +7,7 @@ dependencies = [
     "feedparser>=6.0.14",
     "httpx>=0.28.1",
     "openai>=3.46.0",
+    "pdfminer-six>=20260107",
     "pydantic>=2.14.3",
     "pypdf>=7.0.0",
     "python-dotenv>=1.2.4",

@@ -29,15 +29,15 @@ def create_application(body: ApplicationCreate, db: Session = Depends(get_db)):
     job_row = get_job_row(db, body.job_id)
     extra_text = get_profile_row(db).extra_text
 
-    language, out = tailor(profile, JobOut.model_validate(job_row), extra_text)
+    language, cv, cover_letter, notes = tailor(profile, JobOut.model_validate(job_row), extra_text)
 
     row = ApplicationRow(
         job_id=job_row.id,
         status="draft",
         language=language,
-        cv=out.cv.model_dump(mode="json"),
-        cover_letter=out.cover_letter,
-        notes=out.notes.model_dump(mode="json"),
+        cv=cv.model_dump(mode="json"),
+        cover_letter=cover_letter,
+        notes=notes.model_dump(mode="json"),
     )
     db.add(row)
     db.commit()

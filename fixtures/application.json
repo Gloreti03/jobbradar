@@ -140,6 +140,54 @@
       "Headline focused on forecasting",
       "Bike-share forecasting project moved to the top of projects",
       "Data cleaning bullet moved first in the analyst role"
+    ],
+    "requirement_map": [
+      {
+        "requirement": "MSc in data science, statistics, physics or similar",
+        "importance": "required",
+        "status": "met",
+        "evidence": [
+          "MSc Data Science",
+          "BSc Statistics"
+        ]
+      },
+      {
+        "requirement": "Strong Python (pandas, scikit-learn)",
+        "importance": "required",
+        "status": "met",
+        "evidence": [
+          "Automated data cleaning of POS exports with Python and pandas"
+        ]
+      },
+      {
+        "requirement": "Experience with time series forecasting",
+        "importance": "required",
+        "status": "met",
+        "evidence": [
+          "Forecast hourly bike demand per station using public Oslo Bysykkel data and gradient boosting."
+        ]
+      },
+      {
+        "requirement": "Docker and Git",
+        "importance": "required",
+        "status": "partial",
+        "evidence": [
+          "Docker",
+          "Git"
+        ]
+      },
+      {
+        "requirement": "Deep learning models for forecasting",
+        "importance": "nice_to_have",
+        "status": "missing",
+        "evidence": []
+      },
+      {
+        "requirement": "Putting models in production with ML engineers",
+        "importance": "nice_to_have",
+        "status": "missing",
+        "evidence": []
+      }
     ]
   },
   "snapshot": {

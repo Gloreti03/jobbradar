@@ -6,6 +6,8 @@ DeepSeek only accepts text: the PDF is converted with pypdf, then a single call 
 import io
 import json
 import logging
+import re
+import unicodedata
 
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
@@ -24,31 +26,90 @@ TEXT_EXTENSIONS = (".txt", ".md")
 
 
 class UnreadableDocument(ValueError):
-    """The file has no extractable text (e.g. a scanned PDF)."""
+    """The file has no usable text."""
 
 
-def pdf_to_text(data: bytes) -> str:
+class NotAPdf(UnreadableDocument):
+    """The bytes are not a PDF at all."""
+
+
+class GarbledText(UnreadableDocument):
+    """The PDF opens, but its text comes out empty or corrupted (scans, broken font encodings)."""
+
+
+VOWELS = set("aeiouyæøå")
+
+
+def text_quality(text: str) -> tuple[bool, str]:
+    """Heuristic check that extracted text is real language and not font garbage.
+    -> (ok, reason when not ok)."""
+    sample = text[:20_000]
+    if len(sample.strip()) < 50:
+        return False, "almost no text (scanned PDF?)"
+    bad = sum(
+        1 for ch in sample
+        if ch == "�" or 0xE000 <= ord(ch) <= 0xF8FF or (unicodedata.category(ch) == "Cc" and ch not in "\n\r\t")
+    ) + 5 * sample.count("(cid:")
+    if bad / len(sample) > 0.02:
+        return False, "unreadable characters"
+    latin = [unicodedata.normalize("NFD", ch)[0].lower() for ch in sample if ch.isalpha()]
+    latin = [ch for ch in latin if "a" <= ch <= "z" or ch in "æøå"]
+    if len(latin) > 100:
+        vowel_ratio = sum(ch in VOWELS for ch in latin) / len(latin)
+        if not 0.22 <= vowel_ratio <= 0.62:
+            return False, "letters do not form words (broken font encoding)"
+    tokens = sample.split()
+    wordlike = sum(1 for t in tokens if re.fullmatch(r"[(\"'“]?[^\W\d_]{2,}[)\"'”.,;:!?%-]*", t))
+    if tokens and wordlike / len(tokens) < 0.35:
+        return False, "too few real words"
+    return True, ""
+
+
+def _pypdf_text(data: bytes) -> str:
     try:
         reader = PdfReader(io.BytesIO(data))
         pages = [page.extract_text() or "" for page in reader.pages]
     except (PdfReadError, ValueError, KeyError) as err:
-        raise UnreadableDocument(f"Not a readable PDF: {err}") from err
+        raise NotAPdf(f"Not a readable PDF: {err}") from err
     return "\n\n".join(p.strip() for p in pages if p.strip())
 
 
-def file_to_text(filename: str, data: bytes) -> str:
-    """Text from an extra file (PDF, .txt, .md). Other formats -> empty string."""
+def _pdfminer_text(data: bytes) -> str:
+    try:
+        from pdfminer.high_level import extract_text
+
+        return extract_text(io.BytesIO(data)) or ""
+    except Exception as err:  # pdfminer raises many different errors on odd PDFs
+        log.warning("pdfminer failed: %s", err)
+        return ""
+
+
+def pdf_to_text(data: bytes) -> str:
+    """PDF -> text. Tries pypdf, then pdfminer (different font decoding) if the text looks corrupted.
+    Raises NotAPdf, or GarbledText when neither gives readable text."""
+    text = _pypdf_text(data)
+    ok, reason = text_quality(text)
+    if ok:
+        return text
+    alt = _pdfminer_text(data)
+    if text_quality(alt)[0]:
+        log.info("pypdf text was unusable (%s): using pdfminer", reason)
+        return alt
+    raise GarbledText(reason)
+
+
+def file_to_text(filename: str, data: bytes) -> tuple[str, str | None]:
+    """Text from an extra file (PDF, .txt, .md) -> (text, warning for the user or None)."""
     name = (filename or "").lower()
     if name.endswith(".pdf"):
         try:
-            return pdf_to_text(data)
-        except UnreadableDocument:
-            log.warning("Skipping unreadable extra PDF %s", filename)
-            return ""
+            return pdf_to_text(data), None
+        except UnreadableDocument as err:
+            log.warning("Skipping extra PDF %s: %s", filename, err)
+            return "", f"{filename}: the text could not be read ({err}). Paste its content in 'More about you'."
     if name.endswith(TEXT_EXTENSIONS):
-        return data.decode("utf-8", errors="ignore")
-    log.warning("Skipping unsupported extra file %s", filename)
-    return ""
+        return data.decode("utf-8", errors="ignore"), None
+    return "", f"{filename}: unsupported file type (use PDF, .txt or .md)."
 
 
 def _dedupe(items: list[str]) -> list[str]:

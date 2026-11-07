@@ -120,6 +120,10 @@ def run(api: str, cv: Path) -> int:
     t.check("C missing requirements <= 6", len(app["notes"]["missing_requirements"]) <= 6,
             f"{len(app['notes']['missing_requirements'])} items")
     t.check("C CV identity from profile", app["cv"]["name"] == profile["name"], "name differs from profile")
+    rmap = app["notes"].get("requirement_map", [])
+    t.check("C requirement map with evidence", bool(rmap) and any(r["status"] != "missing" and r["evidence"] for r in rmap)
+            and all(r["evidence"] == [] for r in rmap if r["status"] == "missing"),
+            f"{len(rmap)} requirements, evidence missing or inconsistent")
     t.call("C edit letter", "PATCH", f"/applications/{aid}", json={"cover_letter": app["cover_letter"]})
     t.call("D interview locked", "POST", f"/interview/{aid}/start", expect=409, json={"mode": "text"})
 

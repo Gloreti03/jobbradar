@@ -27,6 +27,8 @@ from prompts import (  # noqa: E402
 
 API = "https://api.elevenlabs.io/v1/convai/agents"
 AGENT_NAME = "JobbRadar Interviewer"
+TURN_TIMEOUT_S = 30  # silence before the agent speaks again (default 7 s)
+MAX_CALL_S = 900  # 6 answers with thinking time
 
 
 def main() -> None:
@@ -48,7 +50,12 @@ def main() -> None:
                     "language": "en",
                     "prompt": {"prompt": INTERVIEW_VOICE_SYSTEM},
                     "dynamic_variables": {"dynamic_variable_placeholders": INTERVIEW_VOICE_PLACEHOLDERS},
-                }
+                },
+                # push-to-talk in the frontend: the mic stays muted until the candidate presses
+                # "Start answer", so the agent must wait in silence instead of re-prompting after 7 s,
+                # and must not cut the candidate off during short pauses
+                "turn": {"turn_timeout": TURN_TIMEOUT_S, "turn_eagerness": "patient"},
+                "conversation": {"max_duration_seconds": MAX_CALL_S},
             },
             "platform_settings": {"auth": {"enable_auth": True}},
         }
@@ -67,6 +74,9 @@ def main() -> None:
     print("First message: ", agent.get("first_message"))
     print("Variables:     ", list((agent.get("dynamic_variables") or {}).get("dynamic_variable_placeholders", {})))
     print("Auth enabled:  ", data.get("platform_settings", {}).get("auth", {}).get("enable_auth"))
+    turn = data.get("conversation_config", {}).get("turn", {})
+    print("Turn:          ", f"timeout {turn.get('turn_timeout')} s, eagerness {turn.get('turn_eagerness')}")
+    print("Max duration:  ", data.get("conversation_config", {}).get("conversation", {}).get("max_duration_seconds"), "s")
     print("Prompt start:  ", (agent.get("prompt") or {}).get("prompt", "")[:80].replace("\n", " "), "...")
 
 

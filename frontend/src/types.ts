@@ -196,3 +196,5 @@ export interface InterviewOut {
   feedback: InterviewFeedback | null;
 }
 export interface SignedUrlResponse { signed_url: string }
+/** One message of the ElevenLabs voice call (body of POST /interview/{id}/voice-transcript). */
+export interface VoiceTurn { role: "interviewer" | "candidate"; content: string }

@@ -14,6 +14,7 @@ import type {
   InterviewTurnResponse,
   JobDetail,
   SignedUrlResponse,
+  VoiceTurn,
   JobOut,
   ProfileOut,
   ProfileAnswers,
@@ -97,6 +98,11 @@ const real = {
     request<InterviewFeedback>(`/interview/${applicationId}/feedback`, { method: "POST" }),
   getInterview: (applicationId: number) => request<InterviewOut>(`/interview/${applicationId}`),
   getVoiceSignedUrl: () => request<SignedUrlResponse>("/voice/signed-url"),
+  saveVoiceTranscript: (applicationId: number, transcript: VoiceTurn[]) =>
+    request<InterviewOut>(`/interview/${applicationId}/voice-transcript`, {
+      method: "POST",
+      body: JSON.stringify({ transcript }),
+    }),
 };
 
 // ---------------------------------------------------------------- mock store
@@ -341,6 +347,20 @@ const mock = {
   async getVoiceSignedUrl(): Promise<SignedUrlResponse> {
     await delay(200);
     throw new ApiError("server", "Voice is not available in demo mode: use text mode", 503);
+  },
+  async saveVoiceTranscript(applicationId: number, transcript: VoiceTurn[]): Promise<InterviewOut> {
+    await delay(300);
+    const iv = loadMockInterview(applicationId);
+    let q = 0;
+    iv.transcript = transcript.map((t) => {
+      const turn = { ...t, question_id: iv.plan[Math.min(q, iv.plan.length - 1)]!.id };
+      if (t.role === "candidate") q++;
+      return turn;
+    });
+    iv.mode = "voice";
+    iv.feedback = null;
+    saveMockInterview(iv);
+    return iv;
   },
 };
 

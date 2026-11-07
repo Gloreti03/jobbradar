@@ -3,9 +3,9 @@
 // Resumes the latest interview (GET /interview/{id}) when the page is reopened.
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Bot, CheckCircle2, Loader2, Lock, MessagesSquare, RotateCcw, Send, Sparkles, User } from "lucide-react";
+import { ArrowLeft, Bot, CheckCircle2, Loader2, Lock, MessagesSquare, Mic, RotateCcw, Send, Sparkles, User } from "lucide-react";
 import { api, isNotFound, qk } from "@/api";
 import type { ApplicationOut, InterviewFeedback, InterviewOut, InterviewQuestion, TranscriptTurn } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { EmptyState, ErrorState, LoadingState, Panel, formatDate } from "@/components/radar/shared";
 import { Feedback } from "@/components/radar/Feedback";
 import { cn } from "@/lib/utils";
+
+// Loaded only when the user picks voice: keeps the ElevenLabs SDK out of the first page load (and of SSR).
+const VoiceInterview = lazy(() => import("@/components/radar/VoiceInterview"));
 
 const PLAN_PREVIEW: { kind: string; text: string }[] = [
   { kind: "Intro", text: "Who you are and why this role" },
@@ -64,6 +67,7 @@ function InterviewSession({ app, initial }: { app: ApplicationOut; initial: Inte
   const [transcript, setTranscript] = useState<TranscriptTurn[]>(initial?.transcript ?? []);
   const [feedback, setFeedback] = useState<InterviewFeedback | null>(initial?.feedback ?? null);
   const [draft, setDraft] = useState("");
+  const [voice, setVoice] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const started = plan.length > 0;
@@ -137,14 +141,41 @@ function InterviewSession({ app, initial }: { app: ApplicationOut; initial: Inte
             {app.applied_at && ` · Applied ${formatDate(app.applied_at)}`}
           </p>
         </div>
-        {started && (
-          <Button variant="outline" disabled={startM.isPending} onClick={() => startM.mutate()}>
-            {startM.isPending ? <Loader2 className="animate-spin" /> : <RotateCcw />} New interview
-          </Button>
+        {started && !voice && (
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setVoice(true)}>
+              <Mic /> Voice interview
+            </Button>
+            <Button variant="outline" disabled={startM.isPending} onClick={() => startM.mutate()}>
+              {startM.isPending ? <Loader2 className="animate-spin" /> : <RotateCcw />} New text interview
+            </Button>
+          </div>
         )}
       </div>
     </div>
   );
+
+  // --- voice mode (ElevenLabs)
+  if (voice) {
+    return (
+      <div>
+        {header}
+        <Suspense fallback={<LoadingState label="Loading voice interview…" />}>
+          <VoiceInterview
+            app={app}
+            onUseText={() => setVoice(false)}
+            onFeedback={(r) => {
+              setPlan(r.plan);
+              setTranscript(r.transcript);
+              setFeedback(r.feedback);
+              setVoice(false);
+              qc.invalidateQueries({ queryKey: qk.interview(app.id) });
+            }}
+          />
+        </Suspense>
+      </div>
+    );
+  }
 
   // --- 1. not started yet
   if (!started) {
@@ -181,6 +212,9 @@ function InterviewSession({ app, initial }: { app: ApplicationOut; initial: Inte
                 <MessagesSquare /> Start text interview
               </>
             )}
+          </Button>
+          <Button size="lg" variant="outline" className="mt-3 w-full" disabled={startM.isPending} onClick={() => setVoice(true)}>
+            <Mic /> Start voice interview
           </Button>
           <p className="mt-3 text-center text-xs text-muted-foreground">At the end you get a score and a stronger answer for every question.</p>
         </Panel>

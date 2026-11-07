@@ -4,10 +4,11 @@ import re
 from datetime import datetime, timedelta
 
 from radar.providers.base import NormalizedJob, as_utc, canonical_url, clean_description
-from schemas import Preferences, Profile
+from schemas import Preferences, Profile, RadarFunnel
 
 OSLO_AREA = ("oslo", "lysaker", "fornebu", "sandvika", "bærum", "asker", "lillestrøm", "lørenskog", "ski", "nordre follo")
 SENIORITY_WORDS = {"intern", "junior", "graduate", "nyutdannet", "trainee", "senior", "mid", "lead", "principal", "head", "director", "chief"}
+ENTRY_ROLES = {"intern", "graduate", "nyutdannet", "trainee"}
 GENERIC_ROLE_WORDS = {"developer", "engineer", "utvikler", "ingeniør", "programmer", "of"}
 OPTIONAL_NORWEGIAN = re.compile(
     r"\bnorwegian(?:[- \t]+(?:language|speaking|skills?|proficiency|fluency|knowledge)){0,3}[ \t]+"
@@ -75,7 +76,7 @@ def title_terms(profile: Profile) -> tuple[list[str], list[str]]:
     terms = profile.search_terms + profile.preferences.roles
     terms = [term.strip() for term in terms if term.strip()]
     positive = list(dict.fromkeys(normalize_terms(term) for term in terms if not term.startswith(("-", "!"))))
-    positive = [term for term in positive if set(term.split()) - SENIORITY_WORDS]
+    positive = [term for term in positive if set(term.split()) - (SENIORITY_WORDS - ENTRY_ROLES)]
     negative = [normalize_terms(term[1:]) for term in terms if term.startswith(("-", "!")) and normalize_terms(term[1:])]
     return positive, negative
 
@@ -95,6 +96,9 @@ def title_relevance(title: str, profile: Profile, company: str | None = None) ->
     location_words = set(normalize_terms(" ".join(profile.preferences.cities or ["Oslo"])).split())
     score = 0
     for term in positive:
+        if term in ENTRY_ROLES and contains_term(text, term):
+            score += 2
+            continue
         term_words = set(term.split()) - SENIORITY_WORDS - location_words
         if not term_words:
             continue
@@ -110,6 +114,13 @@ def title_relevance(title: str, profile: Profile, company: str | None = None) ->
         else:
             score += sum(contains_term(text, word) for word in words if len(word) > 2)
     return score
+
+
+def industry_relevance(job, profile: Profile) -> int:
+    """Interests break ties between relevant roles; they never admit or reject a job."""
+    text = normalize_terms(f"{job.title}\n{job.company or ''}\n{job.description or ''}")
+    interests = {normalize_terms(value) for value in profile.preferences.industries}
+    return sum(contains_term(text, term) for term in interests if term)
 
 
 def location_matches(location: str | None, profile: Profile) -> bool:
@@ -134,21 +145,27 @@ def prepare_board_job(job: NormalizedJob) -> NormalizedJob | None:
     })
 
 
-def filter_jobs(jobs: list, profile: Profile, days: int, english_only: bool, now: datetime) -> list:
+def filter_jobs_with_funnel(jobs: list, profile: Profile, days: int, english_only: bool,
+                          now: datetime) -> tuple[list, RadarFunnel]:
     cutoff = now - timedelta(days=days)
     positive, negative = title_terms(profile)
     selected = []
     urls = set()
     titles = set()
+    counts = dict.fromkeys(("total", "recent", "location", "language", "keywords", "deduplicated", "live", "ranked"), 0)
     for job in jobs:
         if job.status != "active" or (job.expires_at and as_utc(job.expires_at) <= now):
             continue
+        counts["total"] += 1
         if job.posted_at and not cutoff <= as_utc(job.posted_at) <= now:
             continue
+        counts["recent"] += 1
         if not location_matches(job.location, profile):
             continue
+        counts["location"] += 1
         if english_only and (job.language != "en" or job.norwegian_required is not False):
             continue
+        counts["language"] += 1
         title = normalize_terms(job.title)
         if any(contains_term(title, term) for term in negative):
             continue
@@ -156,6 +173,7 @@ def filter_jobs(jobs: list, profile: Profile, days: int, english_only: bool, now
             description = role_text(job.description or "", job.company)
             if not any(contains_term(description, term) for term in positive):
                 continue
+        counts["keywords"] += 1
         url = canonical_url(job.url)
         title_key = (title, (job.company or "").strip().casefold())
         if url in urls or (job.company and title_key in titles):
@@ -164,9 +182,16 @@ def filter_jobs(jobs: list, profile: Profile, days: int, english_only: bool, now
         if job.company:
             titles.add(title_key)
         selected.append(job)
-    return sorted(selected, key=lambda job: (
+    counts["deduplicated"] = len(selected)
+    ordered = sorted(selected, key=lambda job: (
         job.posted_at is None,
         -title_relevance(job.title, profile, job.company),
+        -industry_relevance(job, profile),
         -as_utc(job.posted_at).timestamp() if job.posted_at else 0,
         job.id,
     ))
+    return ordered, RadarFunnel(**counts)
+
+
+def filter_jobs(jobs: list, profile: Profile, days: int, english_only: bool, now: datetime) -> list:
+    return filter_jobs_with_funnel(jobs, profile, days, english_only, now)[0]

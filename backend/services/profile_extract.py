@@ -241,34 +241,6 @@ def _dedupe(items: list[str]) -> list[str]:
     return out
 
 
-# words that describe a contract or level, not a role ("Internship" alone is not a target role)
-_LEVEL_WORDS = {
-    "intern": "intern", "interns": "intern", "internship": "intern", "internships": "intern",
-    "trainee": "intern", "traineeship": "intern", "praksis": "intern", "sommerjobb": "intern",
-    "summer": "intern", "graduate": "junior", "nyutdannet": "junior", "junior": "junior",
-    "entry": "junior", "level": None, "job": None, "jobs": None, "position": None, "role": None,
-    "program": None, "programme": None, "student": None, "part": None, "full": None, "time": None,
-    "deltid": None, "heltid": None, "any": None, "opportunity": None, "opportunities": None,
-}
-
-
-def clean_preferences(profile: Profile) -> Profile:
-    """Keeps only real job titles in preferences.roles: a role made only of level/contract words
-    ("Internship", "Graduate program", "Part-time job") is dropped and becomes the seniority."""
-    prefs = profile.preferences
-    roles, level = [], None
-    for role in _dedupe(prefs.roles):
-        words = re.findall(r"[a-zæøå]+", role.lower())
-        if words and all(w in _LEVEL_WORDS for w in words):
-            level = level or next((_LEVEL_WORDS[w] for w in words if _LEVEL_WORDS[w]), None)
-        else:
-            roles.append(role)
-    prefs.roles = roles
-    if level and not prefs.seniority:
-        prefs.seniority = level
-    return profile
-
-
 def extract_profile(cv_text: str, extra_text: str = "") -> Profile:
     """Calls the model and cleans up the output (blueprint limits)."""
     if not cv_text.strip() and not extra_text.strip():
@@ -285,7 +257,7 @@ def extract_profile(cv_text: str, extra_text: str = "") -> Profile:
     profile.missing_info = _dedupe(profile.missing_info)[:MAX_MISSING_INFO]
     profile.skills = _dedupe(profile.skills)
     profile.tools = _dedupe(profile.tools)
-    return clean_preferences(profile)
+    return profile
 
 
 def format_answers(answers: list[MissingInfoAnswer]) -> str:
@@ -309,4 +281,4 @@ def apply_answers(profile: Profile, answers: list[MissingInfoAnswer]) -> Profile
     updated.search_terms = _dedupe(updated.search_terms or profile.search_terms)[:MAX_SEARCH_TERMS]
     updated.skills = _dedupe(updated.skills)
     updated.tools = _dedupe(updated.tools)
-    return clean_preferences(updated)
+    return updated

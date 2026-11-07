@@ -36,9 +36,6 @@ Field guidance:
 - projects: every project in the CV or extra material, including course and group projects,
   with the tools actually named.
 - preferences: only what the candidate states or clearly implies; otherwise empty.
-  preferences.roles: JOB TITLES only (e.g. "data analyst", "business analyst"). "Internship",
-  "trainee", "graduate program" or "summer job" are not roles: put them in preferences.seniority
-  ("intern" / "junior"). If the candidate seeks e.g. a data internship, write "data analyst intern".
   preferences.industries: sectors or interests the candidate states (e.g. "energy", "public sector").
 - search_terms: 20-30 job-title keywords used to find ads, in BOTH English and Norwegian:
   1) the roles the candidate targets (e.g. "data analyst", "dataanalytiker");

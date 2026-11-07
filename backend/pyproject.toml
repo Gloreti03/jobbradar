@@ -3,11 +3,12 @@ name = "radar-backend"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
-    "anthropic>=2.6.0",
     "fastapi>=0.162.0",
     "feedparser>=6.0.14",
     "httpx>=0.28.1",
+    "openai>=3.46.0",
     "pydantic>=2.14.3",
+    "pypdf>=7.0.0",
     "python-dotenv>=1.2.4",
     "python-multipart>=0.0.33",
     "pyyaml>=6.0.3",

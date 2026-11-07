@@ -14,7 +14,7 @@ Tutti: leggere questo file per intero, controllare il regolamento dell'hackathon
 
 | Chi | Stasera |
 |---|---|
-| **Gabriele** | Crea su GitHub il repo `radar` e invita tutti; crea la API key Anthropic e la condivide in privato |
+| **Gabriele** | Crea su GitHub il repo `radar` e invita tutti; crea la API key DeepSeek (platform.deepseek.com) e la condivide in privato |
 | **Stefano** | Apre nel browser `https://pam-stilling-feed.nav.no/api/publicToken` e verifica che restituisca un token; legge la documentazione del feed NAV; prepara una lista di 15–20 aziende di Oslo con la loro pagina carriere (e su che sistema sono: Teamtailor, Greenhouse, Lever, Ashby) |
 | **Andrea** | Account Lovable; fa una prova di progetto collegato a GitHub; studia le sezioni 4, 6 e 9 |
 | **Matilde** | Account ElevenLabs e un Agent di prova; in Opera attiva `opera://extensions` → Developer mode; studia le sezioni 6, 9 e la parte colloquio |
@@ -35,7 +35,7 @@ Fuori scope: login, invio automatico delle candidature, app mobile, scraping di 
 | Parte | Tecnologia |
 |---|---|
 | Backend + database | **Python 3.11+**, **FastAPI**, **SQLAlchemy 2** + **Pydantic**, **SQLite** (`backend/radar.db`), avvio con `uvicorn` sulla porta **8000** |
-| AI | Claude API con SDK Python `anthropic`. Modelli in `.env`: `MODEL_SMART=claude-sonnet-5-5` (profilo, CV, colloquio), `MODEL_FAST=claude-haiku-5-5` (ranking, import). Output sempre in JSON strutturato |
+| AI | **DeepSeek API** (compatibile OpenAI) con SDK Python `openai` e `base_url=https://api.deepseek.com`. Variabili in `.env`: `DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`, `MODEL_SMART=deepseek-v4-pro` (profilo, CV, colloquio), `MODEL_FAST=deepseek-flash` (ranking, import). Output sempre in JSON (`response_format={"type": "json_object"}`) validato da Pydantic |
 | Frontend | **Lovable** (plausibilmente): genera React + Vite + Tailwind in TypeScript, collegato a un repo GitHub. Si sviluppa in locale sulla porta **5173**, rifiniture con Claude Code |
 | Estensione | JavaScript, Manifest V3 (funziona su Opera e Chrome) |
 | Voce (bonus) | ElevenLabs Agents: SDK React nel frontend, URL firmato generato dal backend |
@@ -58,7 +58,7 @@ Un solo utente demo, nessuna autenticazione. **La demo gira in locale su un solo
                                  ▼
  Frontend (Lovable, :5173) ◀── JSON ──▶ Backend FastAPI (:8000) ──▶ SQLite (radar.db)
  (pagine A-B-C-D)                        │        │
-                                         │        ├──▶ Claude API (profilo, ranking, CV, colloquio)
+                                         │        ├──▶ DeepSeek API (profilo, ranking, CV, colloquio)
                                          │        └──▶ ElevenLabs (URL firmato per la voce)
                                          ▼
                                Radar: scanner a provider
@@ -87,7 +87,7 @@ radar/                          (repo 1: backend + estensione)
 │  ├─ db.py                     engine SQLite, sessione, creazione tabelle
 │  ├─ models.py                 tabelle (sezione 5)
 │  ├─ schemas.py                modelli Pydantic di richieste/risposte = CONTRATTO
-│  ├─ llm.py                    unico punto di accesso a Claude (JSON strutturato)
+│  ├─ llm.py                    unico punto di accesso a DeepSeek (JSON strutturato)
 │  ├─ prompts.py                tutti i prompt
 │  ├─ routers/
 │  │  ├─ profile.py             A                       (Gabriele)
@@ -190,7 +190,7 @@ Errori sempre come `{ "error": "messaggio" }`. I modelli Pydantic in `schemas.py
 Principi di architettura:
 
 1. **Provider a plugin.** Un file per ogni fonte in `radar/providers/`, tutti con lo stesso contratto: ricevono la configurazione e restituiscono una lista di annunci normalizzati. Aggiungere una fonte = aggiungere un file.
-2. **Scansione senza AI.** I provider usano solo API e feed pubblici senza login: nessun token Claude speso qui.
+2. **Scansione senza AI.** I provider usano solo API e feed pubblici senza login: nessun token AI speso qui.
 3. **Configurazione in YAML** (`companies.yml`): aziende di Oslo da seguire con careers URL e tipo di fonte (Teamtailor è molto diffuso in Norvegia; poi Greenhouse, Lever, Ashby).
 4. **Filtri prima dell'AI:** finestra temporale (`posted_at` ultimi N giorni) → località (Oslo/area Oslo/Norvegia/remote; annuncio senza località = passa) → parole chiave sul titolo, positive e negative, prese dal profilo → deduplica per URL e per titolo+azienda.
 5. **Liveness:** prima di spendere token si verifica che l'annuncio sia ancora aperto (per NAV basta `status = ACTIVE` e scadenza non passata; per le altre fonti si controlla l'URL).
@@ -213,7 +213,7 @@ La scansione completa si lancia da terminale (`scripts/scan.py`); il pulsante Ra
 
 - **Mai inventare** esperienze, aziende, date, numeri, strumenti o certificazioni nel CV, nella lettera o nel feedback del colloquio. I requisiti mancanti si mostrano come "lacune", non si dichiarano.
 - Lingua dei documenti: norvegese solo se l'annuncio è in norvegese **e** il candidato ha norvegese ≥ B2; altrimenti inglese.
-- Tutte le chiamate a Claude passano da `llm.py`, sempre con output JSON validato da Pydantic.
+- Tutte le chiamate a DeepSeek passano da `llm.py`, sempre con output JSON validato da Pydantic (se la validazione fallisce, un nuovo tentativo con l'errore nel prompt).
 - Chiavi solo in `backend/.env`. Il frontend e l'estensione parlano solo con il nostro backend.
 - Ogni attesa AI (10–30 s) mostra in UI cosa sta succedendo.
 - Testi dell'interfaccia in inglese.
@@ -245,7 +245,7 @@ Nessuno aspetta gli altri. **Ognuno costruisce il proprio pezzo contro dati fint
 
 ### Gabriele — Fondamenta, Profilo (A), Candidatura (C, backend) · *merge captain*
 **File:** `main.py`, `db.py`, `models.py`, `schemas.py`, `llm.py`, `prompts.py`, `routers/profile.py`, `routers/applications.py`, `services/profile_extract.py`, `services/tailor.py`, `requirements.txt`, `.env.example`, cartella `fixtures/`.
-**Consegna:** nella prima ora backend avviabile con modelli, schemi, `fixtures/` e **tutti gli endpoint come stub** (anche quelli degli altri, che poi li sostituiscono nei propri file); poi CV PDF → profilo corretto in < 30 s (il PDF va direttamente a Claude, niente parser); generazione CV + lettera senza invenzioni, con elenco "cosa ho cambiato" e "requisiti mancanti".
+**Consegna:** nella prima ora backend avviabile con modelli, schemi, `fixtures/` e **tutti gli endpoint come stub** (anche quelli degli altri, che poi li sostituiscono nei propri file); poi CV PDF → profilo corretto in < 30 s (DeepSeek accetta solo testo: il testo del PDF si estrae con `pypdf` e si manda al modello); generazione CV + lettera senza invenzioni, con elenco "cosa ho cambiato" e "requisiti mancanti".
 **Proxy:** stub sulle fixtures (sezione 9).
 **Extra:** ai checkpoint fa il merge su `main` del repo `radar`, spegne i mock delle parti pronte e prova il percorso completo.
 

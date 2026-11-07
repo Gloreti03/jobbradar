@@ -28,6 +28,14 @@ describe("Downloadable documents", () => {
     expect(tooLong.summary).toContain("professional career");
   });
 
+  it("fits many short course and grade entries without changing the CV", () => {
+    const courseHeavy = structuredClone(cv);
+    courseHeavy.education[0]!.details = Array.from({ length: 30 }, (_, i) => `Course ${i + 1} (30/30)`);
+    const before = JSON.stringify(courseHeavy);
+    expect(createCVPdf(courseHeavy, fonts).getNumberOfPages()).toBe(1);
+    expect(JSON.stringify(courseHeavy)).toBe(before);
+  });
+
   it("creates a downloadable PDF cover letter", () => {
     const doc = createCoverPdf(cv, application.cover_letter, fonts);
     expect(doc.getNumberOfPages()).toBe(1);

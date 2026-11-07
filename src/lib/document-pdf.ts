@@ -51,7 +51,10 @@ function cvBlocks(cv: TailoredCV): Block[] {
     for (const e of cv.education) {
       blocks.push({ text: join([e.degree, e.institution]), bold: true, before: 3, gap: 1 });
       blocks.push({ text: join([dateRange(e.start_date, e.end_date), e.location]), size: 0.85, gap: 1 });
-      for (const detail of e.details.filter((d) => d.trim())) blocks.push({ text: detail, gap: 1 });
+      // Courses and grades often arrive as many short entries. Wrap them together
+      // instead of spending a whole line on each fact; keep every entry verbatim.
+      const details = e.details.filter((d) => d.trim());
+      if (details.length) blocks.push({ text: details.join(" · "), gap: 1 });
     }
   }
   if (cv.projects.length) {

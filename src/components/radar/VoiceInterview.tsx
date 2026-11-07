@@ -81,7 +81,7 @@ function VoiceCall({ app, onUseText, onFeedback }: Props) {
       turnsRef.current = [];
       setTurns([]);
       const firstName = (app.snapshot?.cv.name ?? app.cv.name ?? "").split(" ")[0] || "there";
-      conversation.startSession({
+      await conversation.startSession({
         signedUrl: signed_url,
         dynamicVariables: {
           first_message: started.message,

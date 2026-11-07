@@ -1,0 +1,69 @@
+# Public career boards verified on 2026-11-07. Each URL is the source reference.
+municipalities:
+  - OSLO
+  - BÆRUM
+  - ASKER
+  - LILLESTRØM
+  - LØRENSKOG
+  - NORDRE FOLLO
+companies:
+  - name: Schibsted
+    source: teamtailor
+    careers_url: https://schibsted.teamtailor.com/
+    board: schibsted
+  - name: Aidn
+    source: teamtailor
+    careers_url: https://aidn.teamtailor.com/
+    board: aidn
+  - name: Tibber
+    source: teamtailor
+    careers_url: https://tibber.teamtailor.com/
+    board: tibber
+  - name: Nettbil
+    source: teamtailor
+    careers_url: https://nettbil.teamtailor.com/
+    board: nettbil
+  - name: Twoday Norway
+    source: teamtailor
+    careers_url: https://twodaynorway.teamtailor.com/
+    board: twodaynorway
+  - name: Omny
+    source: teamtailor
+    careers_url: https://omny.teamtailor.com/
+    board: omny
+  - name: Sensio
+    source: teamtailor
+    careers_url: https://sensiono.teamtailor.com/
+    board: sensiono
+  - name: Precis
+    source: teamtailor
+    careers_url: https://precisdigital.teamtailor.com/
+    board: precisdigital
+  - name: Geodata
+    source: teamtailor
+    careers_url: https://geodata.teamtailor.com/
+    board: geodata
+  - name: Attensi
+    source: teamtailor
+    careers_url: https://attensi.teamtailor.com/
+    board: attensi
+  - name: Norkart
+    source: teamtailor
+    careers_url: https://norkart.teamtailor.com/
+    board: norkart
+  - name: Cognite
+    source: greenhouse
+    careers_url: https://job-boards.greenhouse.io/cognite
+    board: cognite
+  - name: Palantir
+    source: lever
+    careers_url: https://jobs.lever.co/palantir/
+    board: palantir
+  - name: Dun & Bradstreet
+    source: lever
+    careers_url: https://jobs.lever.co/dnb/
+    board: dnb
+  - name: STACK Infrastructure EMEA
+    source: ashby
+    careers_url: https://jobs.ashbyhq.com/stack-infrastructure-emea
+    board: stack-infrastructure-emea

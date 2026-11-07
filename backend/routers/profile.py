@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from db import get_db
 from schemas import ProfileAnswers, ProfileOut, ProfileUpdate
 from services.profile_extract import (
+    OCR_NOTE,
     GarbledText,
     NotAPdf,
     apply_answers,
@@ -68,6 +69,8 @@ def upload_profile(
             raise HTTPException(status_code=413, detail="CV file is larger than 10 MB")
         try:
             cv_text = pdf_to_text(data)
+            if cv_text.startswith(OCR_NOTE):
+                warnings.append(f"{cv.filename}: read with OCR (scan or unreadable fonts). Check your profile.")
         except NotAPdf:
             raise HTTPException(status_code=400, detail="The CV must be a PDF file")
         except GarbledText as err:

@@ -15,7 +15,7 @@ from services.profile_extract import (
     pdf_to_text,
 )
 from services.profile_store import get_profile as load_profile
-from services.profile_store import get_profile_row, save_profile, to_out
+from services.profile_store import get_profile_row, reset_user_data, same_person, save_profile, to_out
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
@@ -59,7 +59,9 @@ def upload_profile(
     db: Session = Depends(get_db),
 ):
     """CV PDF + extra files (PDF/.txt/.md) + free text -> profile (~10-20 s).
-    Files whose text cannot be read are skipped and listed in `warnings`."""
+    Files whose text cannot be read are skipped and listed in `warnings`.
+    A CV of a different person (other name) deletes the previous candidate's matches,
+    applications and interviews (`reset: true`)."""
     cv_text = ""
     warnings: list[str] = []
     if cv is not None and cv.filename:
@@ -90,4 +92,10 @@ def upload_profile(
         )
 
     profile = extract_profile(cv_text, extra)
-    return to_out(save_profile(db, profile, extra), warnings)
+    # a CV of a different person starts from zero: no Radar matches, applications or interviews
+    # of the previous candidate (same person re-uploading keeps everything)
+    previous = load_profile(db)
+    reset = previous is not None and not same_person(previous.name, profile.name)
+    if reset:
+        reset_user_data(db)  # committed together with the new profile in save_profile
+    return to_out(save_profile(db, profile, extra), warnings, reset=reset)

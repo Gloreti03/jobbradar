@@ -114,6 +114,9 @@ class ProfileOut(Schema):
     updated_at: datetime
     # files that could not be read properly in the last upload (the UI shows them to the user)
     warnings: list[str] = []
+    # true when the upload was a CV of a DIFFERENT person: matches, applications and interviews of the
+    # previous candidate were deleted (the UI should drop its cached Radar / applications)
+    reset: bool = False
 
 
 class ProfileUpdate(Schema):

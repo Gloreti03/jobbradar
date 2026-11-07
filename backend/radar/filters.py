@@ -9,6 +9,38 @@ from schemas import Preferences, Profile
 OSLO_AREA = ("oslo", "lysaker", "fornebu", "sandvika", "bærum", "asker", "lillestrøm", "lørenskog", "ski", "nordre follo")
 SENIORITY_WORDS = {"intern", "junior", "graduate", "nyutdannet", "trainee", "senior", "mid", "lead", "principal", "head", "director", "chief"}
 GENERIC_ROLE_WORDS = {"developer", "engineer", "utvikler", "ingeniør", "programmer", "of"}
+OPTIONAL_NORWEGIAN = re.compile(
+    r"\bnorwegian(?:[- \t]+(?:language|speaking|skills?|proficiency|fluency|knowledge)){0,3}[ \t]+"
+    r"(?:(?:is|are|would be|will be|considered|seen as|also|highly|strongly)[ \t]+){0,4}"
+    r"\(?(?:not[ \t]+(?:strictly[ \t]+)?(?:required|necessary|mandatory|essential|needed|a requirement)"
+    r"|optional|preferred|desirable|desired|nice[- ]to[- ]have"
+    r"|(?:an?[ \t]+)?(?:strong[ \t]+)?(?:plus|advantage|asset|bonus|benefit))\b\)?"
+    r"|\b(?:nice[- ]to[- ]have|preferred|desirable)\s*[:\-]?\s*"
+    r"(?:(?:fluency|proficiency|knowledge|skills?)\s+(?:in|of)\s+)?(?:fluent\s+)?norwegian\b"
+    r"|\bno\s+norwegian(?:\s+(?:language|skills?)){0,2}\s+(?:required|necessary|needed)\b"
+    r"|\b(?:do not|don't)\s+need\s+to\s+(?:speak|know|understand)\s+norwegian\b"
+    r"|\bnorsk(?:kunnskaper|ferdigheter)?[ \t]+(?:(?:er|vil være|også)[ \t]+){0,3}"
+    r"(?:ikke[ \t]+(?:et[ \t]+)?(?:absolutt[ \t]+)?(?:krav|påkrevd|nødvendig)"
+    r"|ønskelig|valgfritt|(?:en[ \t]+)?(?:fordel|bonus|pluss))\b"
+    r"|\btrenger\s+ikke\s+(?:å\s+)?(?:snakke|kunne|beherske)\s+norsk\b"
+    r"|\b(?:speak|speaking|fluent|fluency|proficiency|communicate)\b[^.;!?\n]{0,35}"
+    r"\b(?:norwegian[ \t]*(?:or|/)[ \t]*english|english[ \t]*(?:or|/)[ \t]*norwegian)\b"
+    r"|\b(?:snakke|snakker|beherske|behersker|kommunisere|kommuniserer|forstå|forstått|god|gode)\b[^.;!?\n]{0,35}"
+    r"\b(?:norsk[ \t]*(?:eller|/)[ \t]*engelsk|engelsk[ \t]*(?:eller|/)[ \t]*norsk)\b"
+)
+REQUIRED_NORWEGIAN = re.compile(
+    r"\b(?:fluent|fluency|proficien\w*|excellent|good|speak|spoken|written)\b[^.;!?\n]{0,45}\bnorwegian\b"
+    r"|\bnorwegian\b(?!\s+(?:work permit|citizenship|law))[^.;!?\n]{0,45}\b(?:required|mandatory|essential|must)\b"
+    r"|\bnorwegian(?:\s+language)?\s+(?:fluency|proficiency)\b"
+    r"|\bnorwegian[- ]speaking\b"
+    r"|\b(?:working|work)\s+language\s+(?:(?:is|will be)\s+)?norwegian\b"
+    r"|\bnorwegian\s+is\s+(?:our|the)\s+working\s+language\b"
+    r"|\b(?:må\s+(?:kunne|snakke|beherske|forstå)|snakke|snakker|beherske|behersker|flytende|god|gode|godt|kommunisere|kommuniserer|muntlige?|skriftlige?)\b[^.;!?\n]{0,55}\bnorsk\b"
+    r"|\bnorsk\b[^.;!?\n]{0,55}\b(?:muntlige?|skriftlige?|[abc][12])\b"
+    r"|\bnorsk(?:kunnskaper|ferdigheter)?\s+(?:(?:er|et|absolutt)\s+){0,3}(?:krav|påkrevd|nødvendig)\b"
+    r"|\b(?:må|skal)\b[^.;!?\n]{0,25}\b(?:bestå|bestått)\b[^.;!?\n]{0,20}\bnorskprøve(?:n)?\b"
+    r"|\barbeidsspråk(?:et)?\s+(?:er\s+)?norsk\b|\bnorsk\s+som\s+arbeidsspråk\b"
+)
 
 
 def normalize_terms(value: str) -> str:
@@ -29,17 +61,12 @@ def language_flags(title: str, description: str) -> tuple[str | None, bool | Non
     norwegian = sum(word in {"og", "som", "til", "søker", "er", "med", "arbeid", "arbeidsoppgaver", "kvalifikasjoner", "deg", "du", "vi"} for word in words)
     english = sum(word in {"the", "and", "with", "you", "we", "our", "are", "requirements", "experience", "work"} for word in words)
     language = "no" if norwegian > english else "en" if english else None
-    explicit_optional = re.search(r"norwegian\s+(?:is\s+)?not\s+(?:required|necessary)|no norwegian required", text)
-    required = re.search(
-        r"(?:fluent|fluency|proficien\w*|excellent|good|speak|spoken|written).{0,45}\bnorwegian\b"
-        r"|\bnorwegian\b.{0,45}(?:required|mandatory|essential|must)"
-        r"|(?:må|beherske|behersker|flytende|god|gode|godt|kommunisere|muntlig|skriftlig).{0,55}\bnorsk\b"
-        r"|\bnorsk\b.{0,55}(?:muntlig|skriftlig|krav)",
-        text,
-    )
-    if required and not explicit_optional:
+    # Remove optional language phrases before checking the remaining requirements.
+    # A separate mandatory clause still wins over an optional one.
+    requirement_text, optional_count = OPTIONAL_NORWEGIAN.subn(" ", text)
+    if REQUIRED_NORWEGIAN.search(requirement_text):
         return language, True
-    if explicit_optional or language == "en":
+    if optional_count or language == "en":
         return language, False
     return language, None
 

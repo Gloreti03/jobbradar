@@ -14,8 +14,8 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from db import Base
-from models import JobRow
-from radar.filters import filter_jobs
+from models import JobRow, MatchRow, ProfileRow
+from radar.filters import filter_jobs, language_flags
 from radar.providers.base import NormalizedJob, ScanConfig, canonical_url
 from radar.providers.nav import NavProvider
 from radar.scanner import dump_seed, load_seed, save_jobs
@@ -60,6 +60,27 @@ class SeedTests(unittest.TestCase):
         save_jobs([first])
         second = first.model_copy(update={"source_id": "second", "url": "https://example.org/2"})
         self.assertEqual(save_jobs([first.model_copy(update={"title": "Engineer"}), second]), 2)
+
+    def test_legacy_seed_language_flags_are_corrected_and_cached_matches_invalidated(self):
+        job = NormalizedJob(source="nav", source_id="optional-norwegian", title="Software Engineer",
+                            company="Company", url="https://example.org/optional",
+                            description="We build software. Good English communication skills; Norwegian is a plus.",
+                            language="en", norwegian_required=True)
+        save_jobs([job])
+        with self.session.begin() as db:
+            row = db.scalar(select(JobRow))
+            job_id = row.id
+            db.add(ProfileRow(id=1, data=Profile(name="Test").model_dump()))
+            db.add(MatchRow(profile_id=1, job_id=job_id, score=30, verdict="poor", reasons=[], gaps=[], to_clarify=[]))
+        path = Path(self.directory.name) / "legacy-seed.json"
+        dump_seed(path)
+        load_seed(path)
+        with self.session() as db:
+            row = db.get(JobRow, job_id)
+            self.assertEqual(row.source_id, "optional-norwegian")
+            self.assertEqual(row.language, "en")
+            self.assertIs(row.norwegian_required, False)
+            self.assertIsNone(db.get(MatchRow, (1, job_id)))
 
 
 class FeedTests(unittest.IsolatedAsyncioTestCase):
@@ -171,6 +192,75 @@ assert parse_date(None) is None
             env={**os.environ, "PYTHONTZPATH": ""}, capture_output=True, text=True, timeout=10,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+
+class LanguageRequirementTests(unittest.TestCase):
+    def test_optional_norwegian_is_not_a_requirement(self):
+        examples = [
+            "Good English communication skills; Norwegian is a plus.",
+            "Fluent English. Norwegian is an advantage.",
+            "Fluency in Norwegian is a plus.",
+            "Nice to have: Fluency in Norwegian.",
+            "Nice to have:\nFluency in Norwegian.",
+            "Norwegian language skills would be an asset.",
+            "Proficiency in Norwegian is desirable.",
+            "Fluent Norwegian is preferred.",
+            "Norwegian (preferred).",
+            "Norwegian is not required.",
+            "Norwegian is not mandatory.",
+            "No Norwegian required.",
+            "You do not need to speak Norwegian.",
+            "Norsk er en fordel.",
+            "Gode norskkunnskaper er en fordel.",
+            "Norsk er ønskelig, men ikke et krav.",
+            "Norsk er ikke påkrevd.",
+            "Du trenger ikke å snakke norsk.",
+            "You must be fluent in Norwegian or English.",
+            "Du må beherske norsk eller engelsk.",
+            "Du må kunne gjøre deg selv forstått på norsk/engelsk.",
+        ]
+        for text in examples:
+            with self.subTest(text=text):
+                self.assertIs(language_flags("Engineer", text)[1], False)
+
+    def test_mandatory_norwegian_is_kept(self):
+        examples = [
+            "Fluent Norwegian is required.",
+            "Fluency in English and Norwegian is essential for this role.",
+            "Norwegian language proficiency at C1 level.",
+            "Norwegian language fluency.",
+            "We need a Norwegian-speaking engineer.",
+            "The working language is Norwegian.",
+            "Norwegian is our working language.",
+            "Du må beherske norsk muntlig og skriftlig.",
+            "Norsk er et absolutt krav.",
+            "Du må ha bestått norskprøve B2 muntlig og skriftlig.",
+            "Arbeidsspråket er norsk.",
+            "Behersker norsk som arbeidsspråk.",
+            "Kommuniserer tydelig og presist, både på norsk og engelsk.",
+            "Sterke skriftlige kommunikasjonsevner på norsk.",
+            "Språkferdigheter på norsk – tilsvarende C1.",
+            "Norsk eller annet skandinavisk språk: både muntlige og skriftlige ferdigheter er nødvendig.",
+            "God muntlig og skriftlig fremstillingsevne på norsk\nØnskelig:\nVidereutdanning i ledelse.",
+        ]
+        for text in examples:
+            with self.subTest(text=text):
+                self.assertIs(language_flags("Engineer", text)[1], True)
+
+    def test_an_optional_clause_does_not_hide_a_separate_mandatory_requirement(self):
+        examples = [
+            "Norwegian is not required for interns. Fluent Norwegian is required for this senior role.",
+            "Nice to have: Norwegian. Norwegian is mandatory for client meetings.",
+            "Norwegian is required. English is a plus.",
+        ]
+        for text in examples:
+            with self.subTest(text=text):
+                self.assertIs(language_flags("Engineer", text)[1], True)
+
+    def test_non_language_mentions_do_not_become_mandatory_language_requirements(self):
+        self.assertIs(language_flags("Engineer", "We require a Norwegian work permit.")[1], False)
+        self.assertIsNone(language_flags("Forsker", "Vitnemålet må være på engelsk eller norsk.")[1])
+        self.assertIsNone(language_flags("Forsker", "Dersom vitnemålet ikke er på engelsk eller norsk, er det et krav om godkjenning fra NOKUT.")[1])
 
 
 if __name__ == "__main__":

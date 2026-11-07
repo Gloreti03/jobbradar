@@ -422,7 +422,7 @@
     "discovered_at": "2026-11-07T08:47:43.112412Z",
     "status": "active",
     "language": "no",
-    "norwegian_required": null
+    "norwegian_required": true
   },
   {
     "id": 26,
@@ -541,7 +541,7 @@
     "discovered_at": "2026-11-07T08:47:43.112414Z",
     "status": "active",
     "language": "no",
-    "norwegian_required": null
+    "norwegian_required": false
   },
   {
     "id": 33,
@@ -558,7 +558,7 @@
     "discovered_at": "2026-11-07T08:47:43.112414Z",
     "status": "active",
     "language": "no",
-    "norwegian_required": null
+    "norwegian_required": true
   },
   {
     "id": 34,
@@ -1204,7 +1204,7 @@
     "discovered_at": "2026-11-07T08:47:43.112424Z",
     "status": "active",
     "language": "no",
-    "norwegian_required": true
+    "norwegian_required": false
   },
   {
     "id": 72,
@@ -1680,7 +1680,7 @@
     "discovered_at": "2026-11-07T08:47:43.112432Z",
     "status": "active",
     "language": "no",
-    "norwegian_required": null
+    "norwegian_required": true
   },
   {
     "id": 100,
@@ -2190,7 +2190,7 @@
     "discovered_at": "2026-11-07T08:47:43.112439Z",
     "status": "active",
     "language": "no",
-    "norwegian_required": null
+    "norwegian_required": true
   },
   {
     "id": 130,
@@ -2207,7 +2207,7 @@
     "discovered_at": "2026-11-07T08:47:43.112440Z",
     "status": "active",
     "language": "no",
-    "norwegian_required": null
+    "norwegian_required": true
   },
   {
     "id": 131,
@@ -2394,7 +2394,7 @@
     "discovered_at": "2026-11-07T08:47:43.112442Z",
     "status": "active",
     "language": "no",
-    "norwegian_required": true
+    "norwegian_required": false
   },
   {
     "id": 142,
@@ -2615,7 +2615,7 @@
     "discovered_at": "2026-11-07T08:47:43.112446Z",
     "status": "active",
     "language": "no",
-    "norwegian_required": true
+    "norwegian_required": false
   },
   {
     "id": 155,
@@ -3176,7 +3176,7 @@
     "discovered_at": "2026-11-07T08:47:43.112454Z",
     "status": "active",
     "language": "en",
-    "norwegian_required": true
+    "norwegian_required": false
   },
   {
     "id": 188,
@@ -3720,7 +3720,7 @@
     "discovered_at": "2026-11-07T08:47:43.112462Z",
     "status": "active",
     "language": "no",
-    "norwegian_required": true
+    "norwegian_required": null
   },
   {
     "id": 220,
@@ -4077,7 +4077,7 @@
     "discovered_at": "2026-11-07T08:47:43.112467Z",
     "status": "active",
     "language": "no",
-    "norwegian_required": null
+    "norwegian_required": false
   },
   {
     "id": 241,
@@ -5012,7 +5012,7 @@
     "discovered_at": "2026-11-07T08:47:43.112481Z",
     "status": "active",
     "language": "no",
-    "norwegian_required": true
+    "norwegian_required": false
   },
   {
     "id": 296,
@@ -5709,7 +5709,7 @@
     "discovered_at": "2026-11-07T08:56:09.470623Z",
     "status": "active",
     "language": "en",
-    "norwegian_required": false
+    "norwegian_required": true
   },
   {
     "id": 337,
@@ -5777,7 +5777,7 @@
     "discovered_at": "2026-11-07T08:56:09.470625Z",
     "status": "active",
     "language": "en",
-    "norwegian_required": true
+    "norwegian_required": false
   },
   {
     "id": 341,
@@ -6066,7 +6066,7 @@
     "discovered_at": "2026-11-07T08:56:09.504361Z",
     "status": "active",
     "language": "en",
-    "norwegian_required": false
+    "norwegian_required": true
   },
   {
     "id": 358,

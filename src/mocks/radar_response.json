@@ -265,5 +265,15 @@
       }
     }
   ],
-  "generated_at": "2026-11-07T09:00:00Z"
+  "generated_at": "2026-11-07T09:00:00Z",
+  "funnel": {
+    "total": 12,
+    "recent": 11,
+    "location": 11,
+    "language": 11,
+    "keywords": 9,
+    "deduplicated": 9,
+    "live": 9,
+    "ranked": 9
+  }
 }

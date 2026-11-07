@@ -12,12 +12,37 @@
       "website": null
     },
     "summary": "Master's student in Data Science at the University of Oslo with a background in statistics. Two years of part-time experience in data analysis and dashboarding, plus academic projects in machine learning and NLP.",
-    "skills": ["Data analysis", "Machine learning", "Statistics", "Data visualization", "A/B testing", "NLP"],
-    "tools": ["Python", "pandas", "scikit-learn", "SQL", "PostgreSQL", "Power BI", "Git", "Docker"],
+    "skills": [
+      "Data analysis",
+      "Machine learning",
+      "Statistics",
+      "Data visualization",
+      "A/B testing",
+      "NLP"
+    ],
+    "tools": [
+      "Python",
+      "pandas",
+      "scikit-learn",
+      "SQL",
+      "PostgreSQL",
+      "Power BI",
+      "Git",
+      "Docker"
+    ],
     "languages": [
-      { "language": "Italian", "level": "native" },
-      { "language": "English", "level": "C1" },
-      { "language": "Norwegian", "level": "A2" }
+      {
+        "language": "Italian",
+        "level": "native"
+      },
+      {
+        "language": "English",
+        "level": "C1"
+      },
+      {
+        "language": "Norwegian",
+        "level": "A2"
+      }
     ],
     "experiences": [
       {
@@ -51,7 +76,9 @@
         "location": "Oslo, Norway",
         "start_date": "2024-08",
         "end_date": "2026-06",
-        "details": ["Thesis: topic modelling of Norwegian news articles"]
+        "details": [
+          "Thesis: topic modelling of Norwegian news articles"
+        ]
       },
       {
         "degree": "BSc Statistics",
@@ -66,34 +93,76 @@
       {
         "name": "Oslo bike-share demand forecast",
         "description": "Forecast hourly bike demand per station using public Oslo Bysykkel data and gradient boosting.",
-        "tools": ["Python", "scikit-learn", "LightGBM"],
+        "tools": [
+          "Python",
+          "scikit-learn",
+          "LightGBM"
+        ],
         "url": "https://github.com/example-sofia/bysykkel-forecast"
       },
       {
         "name": "Job ad language classifier",
         "description": "Classifier detecting whether a job ad requires Norwegian, trained on 2,000 labelled ads.",
-        "tools": ["Python", "Hugging Face Transformers"],
+        "tools": [
+          "Python",
+          "Hugging Face Transformers"
+        ],
         "url": null
       }
     ],
     "preferences": {
-      "roles": ["Data Analyst", "Data Scientist", "Junior ML Engineer"],
-      "cities": ["Oslo"],
+      "roles": [
+        "Data Analyst",
+        "Data Scientist",
+        "Junior ML Engineer"
+      ],
+      "cities": [
+        "Oslo"
+      ],
       "seniority": "junior",
-      "work_modes": ["hybrid", "onsite"]
+      "work_modes": [
+        "hybrid",
+        "onsite"
+      ],
+      "industries": [
+        "energy",
+        "public sector"
+      ]
     },
     "search_terms": [
-      "data analyst", "dataanalytiker", "data scientist", "dataforsker", "machine learning",
-      "maskinlæring", "ML engineer", "business intelligence", "BI-analytiker", "analytics",
-      "analytiker", "python", "SQL", "power bi", "statistics", "statistiker", "junior",
-      "graduate", "nyutdannet", "trainee", "NLP", "data engineer", "dataingeniør", "insights"
+      "data analyst",
+      "dataanalytiker",
+      "data scientist",
+      "dataforsker",
+      "machine learning",
+      "maskinlæring",
+      "ML engineer",
+      "business intelligence",
+      "BI-analytiker",
+      "analytics",
+      "analytiker",
+      "python",
+      "SQL",
+      "power bi",
+      "statistics",
+      "statistiker",
+      "junior",
+      "graduate",
+      "nyutdannet",
+      "trainee",
+      "NLP",
+      "data engineer",
+      "dataingeniør",
+      "insights"
     ],
     "missing_info": [
       "Do you have a work permit for Norway, or do you need visa sponsorship?",
-      "Are you looking for full-time work or part-time alongside your studies?",
-      "From which date are you available to start?"
+      "In your Oslo bike-share forecast, which data did you use besides trip history, and how did you check the model?",
+      "In your thesis on Norwegian news, which topic modelling method and tools did you use?",
+      "As a data analyst at Ristorazione Nord, did you write SQL queries yourself? On which database?"
     ]
   },
   "extra_text": "I am especially interested in public sector and energy companies.",
-  "updated_at": "2026-11-07T08:30:00Z"
+  "updated_at": "2026-11-07T08:30:00Z",
+  "warnings": []
 }

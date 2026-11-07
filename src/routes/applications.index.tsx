@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Briefcase, MessagesSquare } from "lucide-react";
+import { ArrowUpRight, Briefcase, MessagesSquare, Plus } from "lucide-react";
 import { api, qk } from "@/api";
 import { APPLICATION_STATUSES, type ApplicationOut, type ApplicationStatus } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { EmptyState, ErrorState, LoadingState, PageHeader, formatDate, statusLabel } from "@/components/radar/shared";
+import { CompanyMark, EmptyState, ErrorState, LoadingState, PageHeader, formatDate, statusLabel } from "@/components/radar/shared";
 
 export const Route = createFileRoute("/applications/")({
   head: () => ({
@@ -36,26 +36,28 @@ function ApplicationsPage() {
 
   return (
     <div>
-      <PageHeader title="Applications" subtitle="Every application you've drafted or sent. Change status as things progress." />
+      <PageHeader title="Keep your next move moving." subtitle="From a first draft to a new beginning. Your applications, documents and conversations, all in one place." actions={<Button asChild variant="outline"><Link to="/radar"><Plus /> Find opportunities</Link></Button>} />
+      {q.isSuccess && q.data.length > 0 && <div className="result-stats"><div className="result-stat"><div className="stat-value">{q.data.length.toString().padStart(2, "0")}</div><div className="stat-label">Total applications</div></div><div className="result-stat"><div className="stat-value text-primary">{q.data.filter((a) => !!a.applied_at).length.toString().padStart(2, "0")}</div><div className="stat-label">Confirmed submissions</div></div><div className="result-stat"><div className="stat-value">{q.data.filter((a) => a.status === "interviewing").length.toString().padStart(2, "0")}</div><div className="stat-label">In conversation</div></div></div>}
       {q.isPending && <LoadingState />}
       {q.isError && <ErrorState error={q.error} onRetry={() => q.refetch()} />}
       {q.isSuccess && q.data.length === 0 && (
         <EmptyState icon={<Briefcase className="size-6" />} title="No applications yet" body="Open a job from Radar and create an application." action={<Button asChild><Link to="/radar">Go to Radar</Link></Button>} />
       )}
       {q.isSuccess && q.data.length > 0 && (
-        <div className="grid grid-cols-5 gap-4">
+        <div className="pipeline-board" aria-label="Application stages">
           {APPLICATION_STATUSES.map((s) => {
             const items = q.data.filter((a) => a.status === s);
             return (
-              <div key={s} className="min-w-0 rounded-xl bg-muted/60 p-3">
-                <div className="mb-3 flex items-center justify-between px-1">
-                  <span className="text-sm font-semibold">{statusLabel[s]}</span>
-                  <span className="rounded-full bg-card px-2 text-xs font-mono text-muted-foreground">{items.length}</span>
+              <div key={s} className="pipeline-column">
+                <div className="mb-4 flex items-center justify-between px-2">
+                  <span className="flex items-center gap-2 text-xs font-semibold"><span className="size-1.5 rounded-full" style={{ background: s === "offer" ? "var(--primary)" : s === "interviewing" ? "var(--info-foreground)" : s === "rejected" ? "var(--warning)" : "var(--muted-foreground)" }} />{statusLabel[s]}</span>
+                  <span className="rounded-md bg-card px-2 py-0.5 text-[10px] font-mono text-muted-foreground">{items.length}</span>
                 </div>
                 <div className="space-y-3">
                   {items.map((a) => (
                     <AppCard key={a.id} a={a} onStatus={(status) => setStatus.mutate({ id: a.id, status })} />
                   ))}
+                  {items.length === 0 && <div className="rounded-lg border border-dashed px-3 py-8 text-center text-[11px] text-muted-foreground">Nothing here yet.</div>}
                 </div>
               </div>
             );
@@ -69,7 +71,8 @@ function ApplicationsPage() {
 function AppCard({ a, onStatus }: { a: ApplicationOut; onStatus: (s: ApplicationStatus) => void }) {
   const submitted = a.status !== "draft";
   return (
-    <div className="rounded-lg border bg-card p-3 shadow-card">
+    <div className="pipeline-card">
+      <div className="mb-4 flex items-center justify-between"><CompanyMark name={a.job.company} className="!size-8 !rounded-lg !text-xs" /><ArrowUpRight className="size-3.5 text-muted-foreground" /></div>
       <Link to="/applications/$id" params={{ id: String(a.id) }} className="block hover:text-primary">
         <div className="text-sm font-semibold leading-snug">{a.job.title}</div>
         <div className="mt-0.5 text-xs text-muted-foreground">{a.job.company ?? "Unknown company"}</div>

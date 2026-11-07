@@ -1,8 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeft, Check, CheckCircle2, ExternalLink, Loader2, MessagesSquare, PenLine, Printer, Save } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, CheckCircle2, Download, ExternalLink, Loader2, MessagesSquare, PenLine, RefreshCw, Save } from "lucide-react";
 import { api, qk } from "@/api";
 import type { ApplicationOut, TailoredCV } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorState, LoadingState, Panel, StatusBadge, formatDate } from "@/components/radar/shared";
 import { CVDocument, CoverDocument } from "@/components/radar/Documents";
+import { RequirementEvidence } from "@/components/radar/RequirementEvidence";
 
 export const Route = createFileRoute("/applications/$id")({
   head: () => ({
@@ -35,8 +36,10 @@ function EditorPage() {
 
 function Editor({ app }: { app: ApplicationOut }) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [cv, setCv] = useState<TailoredCV>(app.cv);
   const [letter, setLetter] = useState(app.cover_letter);
+  const [exporting, setExporting] = useState<"cv" | "cover" | null>(null);
   useEffect(() => {
     setCv(app.cv);
     setLetter(app.cover_letter);
@@ -70,15 +73,37 @@ function Editor({ app }: { app: ApplicationOut }) {
     onError: (e) => toast.error(`Couldn't mark as applied: ${e.message}`),
   });
 
-  const openPrint = async (kind: "cv" | "cover") => {
-    if (dirty) {
-      try {
-        await saveM.mutateAsync();
-      } catch {
-        return;
+  const regenerateM = useMutation({
+    mutationFn: async () => {
+      if (dirty) {
+        const saved = await api.patchApplication(app.id, { cv, cover_letter: letter });
+        sync(saved);
       }
+      return api.createApplication(app.job_id);
+    },
+    onSuccess: (created) => {
+      sync(created);
+      toast.success("New draft created. Your previous draft has been kept.");
+      navigate({ to: "/applications/$id", params: { id: String(created.id) } });
+    },
+    onError: (error) => toast.error(`Could not generate a new draft: ${error.message}`),
+  });
+
+  const exportPdf = async (kind: "cv" | "cover") => {
+    if (exporting) return;
+    setExporting(kind);
+    const documentCV = structuredClone(cv);
+    const documentLetter = letter;
+    try {
+      if (dirty) await saveM.mutateAsync();
+      const { downloadPdf } = await import("@/lib/download-pdf");
+      await downloadPdf(kind, documentCV, documentLetter, app.job.company);
+      toast.success(kind === "cv" ? "One-page CV PDF ready" : "Cover letter PDF ready");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not download the PDF. Please try again.");
+    } finally {
+      setExporting(null);
     }
-    window.open(`/print/${kind}/${app.id}`, "_blank");
   };
 
   const setC = <K extends keyof TailoredCV>(k: K, v: TailoredCV[K]) => setCv((x) => ({ ...x, [k]: v }));
@@ -93,6 +118,7 @@ function Editor({ app }: { app: ApplicationOut }) {
 
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
+          <div className="eyebrow mb-3">YOUR APPLICATION STUDIO</div>
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-semibold tracking-tight">{app.job.title}</h1>
             <StatusBadge status={app.status} />
@@ -106,16 +132,23 @@ function Editor({ app }: { app: ApplicationOut }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => openPrint("cv")}><Printer /> Print CV</Button>
-          <Button variant="outline" onClick={() => openPrint("cover")}><Printer /> Print letter</Button>
-          <Button variant="secondary" disabled={!dirty || saveM.isPending} onClick={() => saveM.mutate()}>
+          {isDraft && <Button variant="outline" disabled={regenerateM.isPending || !!exporting || saveM.isPending || appliedM.isPending} onClick={() => regenerateM.mutate()} title="Creates a separate draft with your current profile; keeps this draft">
+            {regenerateM.isPending ? <Loader2 className="animate-spin" /> : <RefreshCw />} {regenerateM.isPending ? "Generating a new draft…" : "Generate new draft"}
+          </Button>}
+          <Button variant="outline" disabled={!!exporting || regenerateM.isPending || saveM.isPending || appliedM.isPending} onClick={() => exportPdf("cv")}>
+            {exporting === "cv" ? <Loader2 className="animate-spin" /> : <Download />} {exporting === "cv" ? "Preparing PDF…" : "Download CV PDF"}
+          </Button>
+          <Button variant="outline" disabled={!!exporting || regenerateM.isPending || saveM.isPending || appliedM.isPending} onClick={() => exportPdf("cover")}>
+            {exporting === "cover" ? <Loader2 className="animate-spin" /> : <Download />} {exporting === "cover" ? "Preparing PDF…" : "Download letter PDF"}
+          </Button>
+          <Button variant="secondary" disabled={!dirty || saveM.isPending || regenerateM.isPending || appliedM.isPending || !!exporting} onClick={() => saveM.mutate()}>
             {saveM.isPending ? <Loader2 className="animate-spin" /> : dirty ? <Save /> : <Check />} {dirty ? "Save" : "Saved"}
           </Button>
         </div>
       </div>
 
       {/* Next action */}
-      <div className="mb-8 rounded-2xl border border-primary/30 bg-primary-soft/60 p-5">
+      <div className="mb-8 rounded-2xl border border-primary/25 bg-primary-soft/70 p-6">
         {isDraft ? (
           <div className="flex flex-wrap items-center gap-4">
             <div className="mr-auto">
@@ -127,7 +160,7 @@ function Editor({ app }: { app: ApplicationOut }) {
             <Button asChild variant="outline" className="bg-card">
               <a href={applyUrl} target="_blank" rel="noreferrer"><ExternalLink /> Apply on site</a>
             </Button>
-            <Button disabled={appliedM.isPending} onClick={() => appliedM.mutate()}>
+            <Button disabled={appliedM.isPending || regenerateM.isPending || saveM.isPending || !!exporting} onClick={() => appliedM.mutate()}>
               {appliedM.isPending ? <Loader2 className="animate-spin" /> : <CheckCircle2 />} I applied
             </Button>
           </div>
@@ -151,6 +184,7 @@ function Editor({ app }: { app: ApplicationOut }) {
             <TabsTrigger value="cv">CV</TabsTrigger>
             <TabsTrigger value="cover">Cover letter</TabsTrigger>
             <TabsTrigger value="preview">Preview</TabsTrigger>
+            <TabsTrigger value="evidence">Why this CV fits</TabsTrigger>
           </TabsList>
 
           <TabsContent value="cv" className="mt-4 space-y-6">
@@ -188,7 +222,12 @@ function Editor({ app }: { app: ApplicationOut }) {
             </Panel>
           </TabsContent>
 
+          <TabsContent value="evidence" className="mt-4">
+            <RequirementEvidence items={app.notes.requirement_map ?? []} />
+          </TabsContent>
+
           <TabsContent value="preview" className="mt-4 space-y-6">
+            <p className="text-sm text-muted-foreground">Content preview. The downloaded CV uses a compact, single-page A4 layout; all the content below is preserved.</p>
             <div className="rounded-xl border bg-card p-10 shadow-card"><CVDocument cv={cv} /></div>
             <div className="rounded-xl border bg-card p-10 shadow-card"><CoverDocument cv={cv} letter={letter} /></div>
           </TabsContent>

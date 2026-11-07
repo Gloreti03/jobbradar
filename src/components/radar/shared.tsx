@@ -23,10 +23,11 @@ export function PostedDate({ job, className }: { job: JobOut; className?: string
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
-        {subtitle && <p className="mt-1.5 max-w-2xl text-muted-foreground">{subtitle}</p>}
+    <div className="page-heading">
+      <div className="min-w-0">
+        <div className="eyebrow mb-3"><span className="inline-block h-px w-6 bg-primary" /> THE NEXT CHAPTER</div>
+        <h1>{title}</h1>
+        {subtitle && <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
@@ -35,9 +36,9 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
 
 export function Panel({ children, className, title, icon }: { children: ReactNode; className?: string; title?: string; icon?: ReactNode }) {
   return (
-    <section className={cn("rounded-xl border bg-card p-6 shadow-card", className)}>
+    <section className={cn("radar-panel", className)}>
       {title && (
-        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2 className="mb-5 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
           {icon}
           {title}
         </h2>
@@ -49,8 +50,10 @@ export function Panel({ children, className, title, icon }: { children: ReactNod
 
 export function LoadingState({ label = "Loading…" }: { label?: string }) {
   return (
-    <div className="flex items-center justify-center gap-3 py-24 text-muted-foreground">
-      <Loader2 className="size-5 animate-spin text-primary" /> {label}
+    <div role="status" className="loading-state">
+      <RadarGlyph active className="mb-5 size-16" />
+      <p className="text-sm font-semibold text-foreground">{label}</p>
+      <span className="mt-2 text-xs text-muted-foreground">Good things take a moment.</span>
     </div>
   );
 }
@@ -78,18 +81,18 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
 
 export function EmptyState({ icon, title, body, action }: { icon: ReactNode; title: string; body?: string; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center rounded-xl border border-dashed bg-card/60 px-6 py-16 text-center">
-      <div className="mb-4 rounded-full bg-primary-soft p-3 text-primary">{icon}</div>
-      <h3 className="text-lg font-semibold">{title}</h3>
-      {body && <p className="mt-1 max-w-sm text-sm text-muted-foreground">{body}</p>}
+    <div className="empty-state">
+      <div className="empty-state-icon">{icon}</div>
+      <h3 className="text-xl font-semibold tracking-tight">{title}</h3>
+      {body && <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">{body}</p>}
       {action && <div className="mt-6">{action}</div>}
     </div>
   );
 }
 
 const verdictStyle: Record<Verdict, string> = {
-  strong: "bg-primary text-primary-foreground",
-  good: "bg-primary-soft text-accent-foreground",
+  strong: "bg-emerald-800 text-white",
+  good: "bg-emerald-50 text-emerald-900",
   stretch: "bg-warning-soft text-warning-foreground",
   poor: "bg-muted text-muted-foreground",
 };
@@ -102,6 +105,7 @@ export function VerdictBadge({ verdict }: { verdict: Verdict }) {
 }
 
 export function ScoreRing({ score, size = 56 }: { score: number; size?: number }) {
+  const color = score >= 70 ? "stroke-emerald-700" : score >= 45 ? "stroke-warning" : "stroke-muted-foreground";
   const r = (size - 6) / 2;
   const c = 2 * Math.PI * r;
   return (
@@ -112,7 +116,7 @@ export function ScoreRing({ score, size = 56 }: { score: number; size?: number }
           cx={size / 2}
           cy={size / 2}
           r={r}
-          className="fill-none stroke-primary"
+          className={cn("score-arc fill-none", color)}
           strokeWidth={5}
           strokeLinecap="round"
           strokeDasharray={c}
@@ -139,7 +143,7 @@ export function LanguageBadges({ job }: { job: JobOut }) {
 export function Chip({ children, tone = "muted" }: { children: ReactNode; tone?: "muted" | "primary" | "warning" | "info" }) {
   const t = {
     muted: "bg-muted text-muted-foreground",
-    primary: "bg-primary-soft text-accent-foreground",
+    primary: "bg-emerald-50 text-emerald-900",
     warning: "bg-warning-soft text-warning-foreground",
     info: "bg-info-soft text-info-foreground",
   }[tone];
@@ -160,17 +164,28 @@ export function StatusBadge({ status }: { status: ApplicationStatus }) {
 
 export function RadarGlyph({ active, className }: { active?: boolean; className?: string }) {
   return (
-    <div className={cn("relative aspect-square overflow-hidden rounded-full border border-primary/30 bg-primary-soft", className)}>
+    <div aria-hidden="true" className={cn("radar-glyph relative aspect-square overflow-hidden rounded-full border border-primary/30 bg-primary-soft", className)}>
+      <div className="absolute left-0 right-0 top-1/2 border-t border-primary/15" />
+      <div className="absolute bottom-0 left-1/2 top-0 border-l border-primary/15" />
       <div className="absolute inset-[18%] rounded-full border border-primary/25" />
       <div className="absolute inset-[36%] rounded-full border border-primary/25" />
       <div
-        className={cn("absolute inset-0 rounded-full", active ? "animate-radar-sweep" : "animate-[radar-sweep_8s_linear_infinite]")}
+        className={cn("radar-beam absolute inset-0 rounded-full", active ? "animate-radar-sweep" : "animate-[radar-sweep_12s_linear_infinite]")}
         style={{ background: "conic-gradient(from 0deg, transparent 0deg, color-mix(in oklab, var(--primary) 45%, transparent) 60deg, transparent 61deg)" }}
       />
       {active && <div className="absolute inset-[30%] rounded-full bg-primary/30 animate-radar-ping" />}
+      <span className="absolute left-[30%] top-[25%] size-[4%] rounded-full bg-primary/70" />
+      <span className="absolute bottom-[29%] right-[23%] size-[3%] rounded-full bg-primary/50" />
       <div className="absolute left-1/2 top-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary" />
     </div>
   );
+}
+
+export function CompanyMark({ name, className }: { name: string | null; className?: string }) {
+  const title = name || "Company";
+  const letters = title.split(/\s+/).slice(0, 2).map((word) => word[0]).join("");
+  const tone = [...title].reduce((sum, letter) => sum + letter.charCodeAt(0), 0) % 4;
+  return <div aria-hidden="true" className={cn("company-mark", `company-tone-${tone}`, className)}>{letters}</div>;
 }
 
 export function Points({ icon, title, items, tone }: { icon: ReactNode; title: string; items: string[]; tone: string }) {

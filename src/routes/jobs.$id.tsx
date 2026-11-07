@@ -5,7 +5,7 @@ import { ArrowLeft, CircleHelp, ExternalLink, FileText, Loader2, MapPin, Minus, 
 import { api, qk, USE_MOCKS } from "@/api";
 import { Button } from "@/components/ui/button";
 import { useProfileQuery } from "@/components/radar/AppShell";
-import { ErrorState, LanguageBadges, LoadingState, Panel, Points, PostedDate, ScoreRing, StatusBadge, VerdictBadge, formatDate } from "@/components/radar/shared";
+import { CompanyMark, ErrorState, LanguageBadges, LoadingState, Panel, Points, PostedDate, ScoreRing, StatusBadge, VerdictBadge, formatDate } from "@/components/radar/shared";
 
 export const Route = createFileRoute("/jobs/$id")({
   head: () => ({
@@ -51,8 +51,9 @@ function JobPage() {
         <ArrowLeft className="size-4" /> Back to Radar
       </Link>
 
-      <div className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight">{job.title}</h1>
+      <div className="mb-8 rounded-2xl border bg-card p-6 sm:p-8">
+        <div className="mb-5 flex items-center gap-3"><CompanyMark name={job.company} /><span className="eyebrow">A POTENTIAL NEXT CHAPTER</span></div>
+        <h1 className="max-w-4xl text-3xl font-semibold leading-tight tracking-[-1.3px] sm:text-4xl">{job.title}</h1>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-muted-foreground">
           <span className="font-medium text-foreground">{job.company ?? "Unknown company"}</span>
           {job.location && <span className="inline-flex items-center gap-1"><MapPin className="size-4" />{job.location}</span>}
@@ -76,7 +77,7 @@ function JobPage() {
           </Panel>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
           <Panel title="Next step" className="border-primary/30">
             {applications.isPending ? <LoadingState label="Checking your applications…" /> : applications.isError ? (
               <ErrorState error={applications.error} onRetry={() => applications.refetch()} />

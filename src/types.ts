@@ -38,6 +38,7 @@ export interface Preferences {
   cities: string[];
   seniority: string | null;
   work_modes: string[];
+  industries?: string[];
 }
 export interface Profile {
   name: string;
@@ -54,8 +55,10 @@ export interface Profile {
   search_terms: string[];
   missing_info: string[];
 }
-export interface ProfileOut { id: number; profile: Profile; extra_text: string; updated_at: string }
+export interface ProfileOut { id: number; profile: Profile; extra_text: string; updated_at: string; warnings?: string[] }
 export interface ProfileUpdate { profile: Profile; extra_text?: string | null }
+export interface MissingInfoAnswer { question: string; answer: string }
+export interface ProfileAnswers { answers: MissingInfoAnswer[] }
 
 export interface JobOut {
   id: number;
@@ -83,6 +86,16 @@ export interface MatchOut {
 }
 export interface RadarRequest { days: 3 | 7 | 14 | 30; english_only: boolean; refresh: boolean }
 export interface RadarResult { job: JobOut; match: MatchOut }
+export interface RadarFunnel {
+  total: number;
+  recent: number;
+  location: number;
+  language: number;
+  keywords: number;
+  deduplicated: number;
+  live: number;
+  ranked: number;
+}
 export interface RadarResponse {
   days_requested: number;
   days_used: number;
@@ -91,6 +104,7 @@ export interface RadarResponse {
   candidates_count: number;
   results: RadarResult[];
   generated_at: string;
+  funnel?: RadarFunnel | null;
 }
 export interface ApplicationRef { id: number; status: ApplicationStatus }
 export interface JobDetail { job: JobOut; match: MatchOut | null; application: ApplicationRef | null }
@@ -106,10 +120,17 @@ export interface TailoredCV {
   projects: Project[];
   languages: LanguageSkill[];
 }
+export interface RequirementMatch {
+  requirement: string;
+  importance: "required" | "nice_to_have";
+  status: "met" | "partial" | "missing";
+  evidence: string[];
+}
 export interface ApplicationNotes {
   keywords_covered: string[];
   missing_requirements: string[];
   changes: string[];
+  requirement_map?: RequirementMatch[];
 }
 export interface Snapshot { job: JobOut; cv: TailoredCV; cover_letter: string; applied_at: string }
 export interface ApplicationPatch {

@@ -10,6 +10,7 @@ import type {
   JobDetail,
   JobOut,
   ProfileOut,
+  ProfileAnswers,
   ProfileUpdate,
   RadarRequest,
   RadarResponse,
@@ -68,6 +69,8 @@ const real = {
   },
   updateProfile: (body: ProfileUpdate) =>
     request<ProfileOut>("/profile", { method: "PUT", body: JSON.stringify(body) }),
+  answerProfile: (body: ProfileAnswers) =>
+    request<ProfileOut>("/profile/answers", { method: "POST", body: JSON.stringify(body) }),
   scanRadar: (body: RadarRequest) =>
     request<RadarResponse>("/radar", { method: "POST", body: JSON.stringify(body) }),
   getJob: (id: number) => request<JobDetail>(`/jobs/${id}`),
@@ -162,6 +165,21 @@ const mock = {
       extra_text: body.extra_text ?? s.profile.extra_text,
       updated_at: now(),
     };
+    save(s);
+    return s.profile;
+  },
+  async answerProfile(body: ProfileAnswers): Promise<ProfileOut> {
+    await delay(1000);
+    const s = load();
+    if (!s.profile) throw new ApiError("not_found", "No profile yet", 404);
+    const answers = body.answers.filter((a) => a.answer.trim());
+    if (!answers.length) throw new ApiError("client", "Write at least one answer", 422);
+    const answered = new Set(answers.map((a) => a.question.trim().toLowerCase()));
+    s.profile.profile.missing_info = s.profile.profile.missing_info.filter((q) => !answered.has(q.trim().toLowerCase()));
+    const transcript = answers.map((a) => `Q: ${a.question}\nA: ${a.answer.trim()}`).join("\n");
+    s.profile.extra_text = [s.profile.extra_text, `--- Answers to profile questions ---\n${transcript}`].filter(Boolean).join("\n\n");
+    s.profile.updated_at = now();
+    // Demo mode stores answers, but does not pretend to run AI or infer new roles.
     save(s);
     return s.profile;
   },

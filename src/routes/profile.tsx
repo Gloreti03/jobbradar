@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { useProfileQuery } from "@/components/radar/AppShell";
 import { ErrorState, LoadingState, PageHeader, Panel, formatDate } from "@/components/radar/shared";
 import { DISCOVERY_QUESTIONS, mergeAttachments, splitProfileMaterial } from "@/lib/profile-material";
+import { saveProfileWithAnswers } from "@/lib/save-profile";
+import { DocumentWarnings } from "@/components/radar/DocumentWarnings";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -33,7 +35,7 @@ function ProfilePage() {
   return <ProfileEditor data={q.data} />;
 }
 
-function UploadScreen({ firstUse, onDone }: { firstUse?: boolean; onDone?: () => void }) {
+function UploadScreen({ firstUse, onDone }: { firstUse?: boolean; onDone?: (profile: ProfileOut) => void }) {
   const qc = useQueryClient();
   const [cv, setCv] = useState<File | null>(null);
   const [extra, setExtra] = useState<File[]>([]);
@@ -42,29 +44,35 @@ function UploadScreen({ firstUse, onDone }: { firstUse?: boolean; onDone?: () =>
     mutationFn: () => api.uploadProfile(cv!, extra, text),
     onSuccess: (p) => {
       qc.setQueryData(qk.profile, p);
+      qc.setQueryData(["radar", "last"], null);
       toast.success("Profile created from your CV");
-      onDone?.();
+      if (p.warnings?.length) toast.warning("Some documents could not be read. Review the warnings on your profile.");
+      onDone?.(p);
     },
     onError: (e) => toast.error(e.message),
   });
 
   return (
-    <div className={firstUse ? "mx-auto max-w-2xl pt-6" : ""}>
+    <div className={firstUse ? "mx-auto max-w-3xl pt-2" : ""}>
       {firstUse && (
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary-soft text-primary">
             <FileUp className="size-7" />
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight">Upload your CV to get started</h1>
-          <p className="mx-auto mt-2 max-w-md text-muted-foreground">
-            RADAR reads your CV to build a profile, then scans Oslo job postings for roles that fit you. Radar unlocks once your profile is ready.
+          <div className="eyebrow mb-4 justify-center">EVERY NEXT CHAPTER STARTS SOMEWHERE</div>
+          <h1 className="text-4xl font-semibold tracking-[-1.8px] sm:text-5xl">Let's put you on the radar.</h1>
+          <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
+            Start with your CV. Add the projects, interests and experiences that make your story yours. Then explore where it could take you.
           </p>
         </div>
       )}
+      {firstUse && <div className="mb-5 grid grid-cols-3 gap-3">
+        {["Your experience", "Your interests", "Your next move"].map((label, i) => <div key={label} className="rounded-xl border bg-card p-4"><span className="font-mono text-[10px] text-primary">0{i + 1}</span><p className="mt-2 text-xs font-semibold">{label}</p></div>)}
+      </div>}
       <Panel>
         <div className="space-y-6">
-          <label className="flex cursor-pointer flex-col items-center rounded-xl border-2 border-dashed border-primary/30 bg-primary-soft/40 px-6 py-10 text-center transition-colors hover:border-primary/60">
-            <UploadCloud className="mb-3 size-8 text-primary" />
+          <label className="flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-primary/40 bg-primary-soft/40 px-6 py-12 text-center transition-colors hover:border-primary hover:bg-primary-soft">
+            <span className="mb-4 grid size-14 place-items-center rounded-2xl border border-primary/15 bg-card text-primary"><UploadCloud className="size-6" /></span>
             <span className="font-medium">{cv ? cv.name : "Choose your CV (PDF)"}</span>
             <span className="mt-1 text-sm text-muted-foreground">{cv ? "Click to replace" : "Required"}</span>
             <input type="file" accept=".pdf,application/pdf" className="hidden" onChange={(e) => setCv(e.target.files?.[0] ?? null)} />
@@ -148,10 +156,14 @@ function ProfileEditor({ data }: { data: ProfileOut }) {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [discovery, setDiscovery] = useState<Record<number, string>>({});
   const [reupload, setReupload] = useState(false);
+  const [uploadWarnings, setUploadWarnings] = useState<string[]>(data.warnings ?? []);
   useEffect(() => {
     setP(data.profile);
     setExtraText(splitProfileMaterial(data.extra_text).notes);
   }, [data]);
+  useEffect(() => {
+    if (data.warnings?.length) setUploadWarnings(data.warnings);
+  }, [data.warnings]);
 
   const set = <K extends keyof Profile>(k: K, v: Profile[K]) => setP((x) => ({ ...x, [k]: v }));
   const setPref = <K extends keyof Profile["preferences"]>(k: K, v: Profile["preferences"][K]) => setP((x) => ({ ...x, preferences: { ...x.preferences, [k]: v } }));
@@ -159,69 +171,75 @@ function ProfileEditor({ data }: { data: ProfileOut }) {
 
   const save = useMutation({
     mutationFn: () => {
-      const answered = p.missing_info
-        .map((q, i) => (answers[i]?.trim() ? `Q: ${q}\nA: ${answers[i].trim()}` : null))
-        .filter(Boolean) as string[];
-      const missing = p.missing_info.filter((_, i) => !answers[i]?.trim());
-      const discoveryAnswers = DISCOVERY_QUESTIONS.map((q, i) => discovery[i]?.trim() ? `Q: ${q}\nA: ${discovery[i].trim()}` : "");
-      const text = [extraText, ...answered, ...discoveryAnswers, material.documents].filter(Boolean).join("\n\n");
-      return api.updateProfile({ profile: { ...p, missing_info: missing }, extra_text: text });
+      const text = [extraText, material.documents].filter(Boolean).join("\n\n");
+      return saveProfileWithAnswers(api, p, text, answers, discovery);
     },
     onSuccess: (d) => {
       qc.setQueryData(qk.profile, d);
       setAnswers({});
       setDiscovery({});
+      qc.invalidateQueries({ queryKey: ["job"] });
+      qc.setQueryData(["radar", "last"], null);
       toast.success("Profile saved");
     },
     onError: (e) => toast.error(`Couldn't save: ${e.message}`),
   });
 
   return (
-    <div>
+    <fieldset disabled={save.isPending} className="min-w-0">
       <PageHeader
-        title={p.name || "Your profile"}
-        subtitle={<>Built from your CV · last updated {formatDate(data.updated_at)}. Review it — Radar matches jobs against exactly this.</>}
+        title="Your story, in focus."
+        subtitle="The experience you bring. The things that move you. This is where your search begins."
         actions={
           <>
             <Button variant="outline" onClick={() => setReupload((v) => !v)}>
               <FileUp /> {reupload ? "Cancel" : "Upload new CV"}
             </Button>
             <Button disabled={!dirty || save.isPending} onClick={() => save.mutate()}>
-              {save.isPending ? <Loader2 className="animate-spin" /> : <Save />} Save changes
+              {save.isPending ? <Loader2 className="animate-spin" /> : <Save />} {save.isPending ? "Updating your profile…" : "Save changes"}
             </Button>
           </>
         }
       />
 
+      <div className="profile-banner">
+        <div className="profile-avatar" aria-hidden="true">{p.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("") || "R"}</div>
+        <div className="min-w-0 flex-1"><h2 className="text-xl font-semibold tracking-tight">{p.name || "Your profile"}</h2><p className="mt-1 text-sm leading-relaxed text-muted-foreground">{p.headline}</p><div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[9px] text-primary"><span>{p.skills.length} SKILLS</span><span>{p.projects.length} PROJECTS</span><span>UPDATED {formatDate(data.updated_at)}</span></div></div>
+      </div>
+
       {reupload && (
         <div className="mb-8">
-          <UploadScreen onDone={() => setReupload(false)} />
+          <UploadScreen onDone={(updated) => { setUploadWarnings(updated.warnings ?? []); setReupload(false); }} />
         </div>
       )}
 
+      <DocumentWarnings warnings={uploadWarnings} />
+
       {p.missing_info.length > 0 && (
-        <Panel className="mb-6 border-warning/40 bg-warning-soft/50" title="A few questions to improve your matches" icon={<HelpCircle className="size-4 text-warning-foreground" />}>
-          <div className="space-y-4">
+        <details className="radar-panel questions-panel mb-4">
+          <summary className="flex list-none items-center gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary"><HelpCircle className="size-5" /></span><span className="flex-1"><span className="block text-sm font-semibold">A few details. A clearer direction.</span><span className="mt-1 block text-xs text-muted-foreground">{p.missing_info.length} questions to sharpen your profile</span></span><Plus className="size-4 text-primary" /></summary>
+          <div className="mt-6 space-y-4 border-t pt-5">
             {p.missing_info.map((q, i) => (
               <div key={q}>
                 <Label className="text-foreground">{q}</Label>
                 <Input className="mt-1.5 bg-card" value={answers[i] ?? ""} onChange={(e) => setAnswers((a) => ({ ...a, [i]: e.target.value }))} placeholder="Your answer" />
               </div>
             ))}
-            <p className="text-xs text-muted-foreground">Answers are saved with your additional information when you click Save changes.</p>
+            <p className="text-xs text-muted-foreground">Save changes to update your profile and search preferences from these answers. This can take a few seconds.</p>
           </div>
-        </Panel>
+        </details>
       )}
 
-      <Panel className="mb-6" title="Explore directions you might not have considered" icon={<Sparkles className="size-4 text-primary" />}>
-        <p className="mb-4 text-sm text-muted-foreground">Tell us what you enjoy doing, even if you do not know the job title. Your answers are saved as additional context; they do not add unverified skills to your CV.</p>
+      <details className="radar-panel mb-6">
+        <summary className="flex list-none items-center gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-info-soft text-info-foreground"><Sparkles className="size-5" /></span><span className="flex-1"><span className="block text-sm font-semibold">There might be a path you haven't thought of.</span><span className="mt-1 block text-xs text-muted-foreground">Explore your interests, beyond job titles</span></span><Plus className="size-4 text-info-foreground" /></summary>
+        <p className="mb-4 mt-6 border-t pt-5 text-sm text-muted-foreground">Tell us what you enjoy doing, even if you do not know the job title. Save changes to refine your profile and search preferences, then run Radar again. Interests are not treated as demonstrated skills.</p>
         <div className="space-y-4">
           {DISCOVERY_QUESTIONS.map((question, i) => <div key={question}>
             <Label htmlFor={`discovery-${i}`}>{question}</Label>
             <Textarea id={`discovery-${i}`} className="mt-1.5" rows={2} placeholder="A concrete example is helpful…" value={discovery[i] ?? ""} onChange={(e) => setDiscovery((previous) => ({ ...previous, [i]: e.target.value }))} />
           </div>)}
         </div>
-      </Panel>
+      </details>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
@@ -295,6 +313,7 @@ function ProfileEditor({ data }: { data: ProfileOut }) {
           <Panel title="Preferences">
             <div className="space-y-5">
               <ListEditor label="Target roles" items={p.preferences.roles} onChange={(v) => setPref("roles", v)} />
+              <ListEditor label="Industries & interests" items={p.preferences.industries ?? []} onChange={(v) => setPref("industries", v)} placeholder="E.g. aviation, energy, technology" />
               <ListEditor label="Cities" items={p.preferences.cities} onChange={(v) => setPref("cities", v)} />
               <div>
                 <Label>Seniority</Label>
@@ -357,6 +376,7 @@ function ProfileEditor({ data }: { data: ProfileOut }) {
           </Button>
         </div>
       </div>
-    </div>
+      {dirty && <div className="profile-savebar"><div><p className="text-sm font-semibold">Your next move starts with a clear profile.</p><p className="mt-1 text-xs text-muted-foreground">Save your changes before running a new scan.</p></div><Button disabled={save.isPending} onClick={() => save.mutate()}>{save.isPending ? <Loader2 className="animate-spin" /> : <Save />}{save.isPending ? "Updating…" : "Save changes"}</Button></div>}
+    </fieldset>
   );
 }

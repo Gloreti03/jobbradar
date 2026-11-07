@@ -1,6 +1,6 @@
 """Configures the ElevenLabs voice-interview agent from our code (owner: Matilde).
 
-Sets system prompt, first message, language, test values of the variables and authentication
+Sets name, system prompt, first message, language, test values of the variables and authentication
 (signed URLs only) on the agent ELEVENLABS_AGENT_ID, keeping the voice chosen on elevenlabs.io.
 The texts live in prompts.py (INTERVIEW_VOICE_*): change them there and run this again.
 
@@ -26,6 +26,7 @@ from prompts import (  # noqa: E402
 )
 
 API = "https://api.elevenlabs.io/v1/convai/agents"
+AGENT_NAME = "JobbRadar Interviewer"
 
 
 def main() -> None:
@@ -40,6 +41,7 @@ def main() -> None:
 
     if not args.show:
         body = {
+            "name": AGENT_NAME,
             "conversation_config": {
                 "agent": {
                     "first_message": INTERVIEW_VOICE_FIRST_MESSAGE,

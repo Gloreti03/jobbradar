@@ -82,7 +82,9 @@ radar/                          (repo 1: backend + estensione)
 │  └─ interview.json
 ├─ backend/
 │  ├─ .env                      chiavi (non committare) — .env.example sì
-│  ├─ requirements.txt
+│  ├─ pyproject.toml, uv.lock   dipendenze (`uv sync`); `uv add <pkg>` per aggiungerne
+│  ├─ config.py                 legge .env (chiavi, modelli, DB)
+│  ├─ fixtures.py               legge fixtures/ per gli stub
 │  ├─ main.py                   app FastAPI, CORS (localhost:5173 + estensione), include i router
 │  ├─ db.py                     engine SQLite, sessione, creazione tabelle
 │  ├─ models.py                 tabelle (sezione 5)
@@ -244,7 +246,7 @@ Nessuno aspetta gli altri. **Ognuno costruisce il proprio pezzo contro dati fint
 ## 10. Divisione dei ruoli
 
 ### Gabriele — Fondamenta, Profilo (A), Candidatura (C, backend) · *merge captain*
-**File:** `main.py`, `db.py`, `models.py`, `schemas.py`, `llm.py`, `prompts.py`, `routers/profile.py`, `routers/applications.py`, `services/profile_extract.py`, `services/tailor.py`, `requirements.txt`, `.env.example`, cartella `fixtures/`.
+**File:** `main.py`, `db.py`, `models.py`, `schemas.py`, `llm.py`, `prompts.py`, `routers/profile.py`, `routers/applications.py`, `services/profile_extract.py`, `services/tailor.py`, `config.py`, `fixtures.py`, `pyproject.toml`/`uv.lock`, `.env.example`, cartella `fixtures/`.
 **Consegna:** nella prima ora backend avviabile con modelli, schemi, `fixtures/` e **tutti gli endpoint come stub** (anche quelli degli altri, che poi li sostituiscono nei propri file); poi CV PDF → profilo corretto in < 30 s (DeepSeek accetta solo testo: il testo del PDF si estrae con `pypdf` e si manda al modello); generazione CV + lettera senza invenzioni, con elenco "cosa ho cambiato" e "requisiti mancanti".
 **Proxy:** stub sulle fixtures (sezione 9).
 **Extra:** ai checkpoint fa il merge su `main` del repo `radar`, spegne i mock delle parti pronte e prova il percorso completo.

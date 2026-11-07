@@ -5,6 +5,7 @@ Uso:
     profile = complete_json("smart", system=PROMPT, user=cv_text, schema=Profile)
     # in parallelo (es. ranking a gruppi):
     results = await asyncio.gather(*(acomplete_json("fast", ..., schema=X) for ... in gruppi))
+    # per il ranking veloce, acomplete_json accetta reasoning_effort="none"
 
 DeepSeek garantisce un JSON valido ma NON lo schema: qui si valida con Pydantic e,
 se fallisce, si riprova mandando l'errore al modello.
@@ -133,8 +134,12 @@ async def acomplete_json(
     temperature: float = 0.3,
     max_tokens: int = 4096,
     retries: int = 2,
+    reasoning_effort: Literal["none", "low", "high", "max"] | None = None,
 ) -> T:
     messages = _messages(system, user, schema)
+    options = {}
+    if reasoning_effort is not None:
+        options["reasoning_effort"] = reasoning_effort
     last_err: Exception | None = None
     for attempt in range(retries + 1):
         t0 = time.monotonic()
@@ -144,6 +149,7 @@ async def acomplete_json(
             response_format={"type": "json_object"},
             temperature=temperature,
             max_tokens=max_tokens,
+            **options,
         )
         raw = resp.choices[0].message.content
         _log_call(kind, schema, attempt, t0, resp)

@@ -4,8 +4,16 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from db import get_db
-from schemas import ProfileOut, ProfileUpdate
-from services.profile_extract import UnreadableDocument, extract_profile, file_to_text, pdf_to_text
+from schemas import ProfileAnswers, ProfileOut, ProfileUpdate
+from services.profile_extract import (
+    UnreadableDocument,
+    apply_answers,
+    extract_profile,
+    file_to_text,
+    format_answers,
+    pdf_to_text,
+)
+from services.profile_store import get_profile as load_profile
 from services.profile_store import get_profile_row, save_profile, to_out
 
 router = APIRouter(prefix="/profile", tags=["profile"])
@@ -24,6 +32,22 @@ def get_profile(db: Session = Depends(get_db)):
 @router.put("", response_model=ProfileOut)
 def update_profile(body: ProfileUpdate, db: Session = Depends(get_db)):
     return to_out(save_profile(db, body.profile, body.extra_text))
+
+
+@router.post("/answers", response_model=ProfileOut)
+def answer_missing_info(body: ProfileAnswers, db: Session = Depends(get_db)):
+    """Answers to profile.missing_info -> updated profile (~5-10 s).
+    Answered questions disappear from missing_info; the Q&A is also kept in extra_text for tailoring."""
+    answers = [a for a in body.answers if a.answer.strip()]
+    if not answers:
+        raise HTTPException(status_code=422, detail="Write at least one answer")
+    profile = load_profile(db)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="No profile yet: upload your CV")
+    updated = apply_answers(profile, answers)
+    extra = get_profile_row(db).extra_text.strip()
+    extra = f"{extra}\n\n--- Answers to profile questions ---\n{format_answers(answers)}".strip()
+    return to_out(save_profile(db, updated, extra))
 
 
 @router.post("/upload", response_model=ProfileOut)

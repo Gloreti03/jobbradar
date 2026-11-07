@@ -120,6 +120,17 @@ class ProfileUpdate(Schema):
     extra_text: str | None = None
 
 
+class MissingInfoAnswer(Schema):
+    question: str  # one of profile.missing_info, copied as is
+    answer: str
+
+
+class ProfileAnswers(Schema):
+    """Body of POST /profile/answers: the user's answers to profile.missing_info."""
+
+    answers: list[MissingInfoAnswer]
+
+
 # ---------------------------------------------------------------------------
 # B — Jobs and Radar
 # ---------------------------------------------------------------------------

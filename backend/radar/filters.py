@@ -80,16 +80,35 @@ def title_terms(profile: Profile) -> tuple[list[str], list[str]]:
     return positive, negative
 
 
-def title_relevance(title: str, profile: Profile) -> int:
+def role_text(value: str, company: str | None = None) -> str:
+    text = normalize_terms(value)
+    # Employer names are not skills (e.g. the fashion retailer HIJA BI AS).
+    employer = re.sub(r"(?: (?:as|asa|ab|inc|ltd|limited))+$", "", normalize_terms(company or ""))
+    if len(employer.split()) > 1:
+        text = re.sub(r"(?<!\w)" + re.escape(employer) + r"(?!\w)", " ", text)
+    return " ".join(text.split())
+
+
+def title_relevance(title: str, profile: Profile, company: str | None = None) -> int:
     positive, _ = title_terms(profile)
-    text = normalize_terms(title)
+    text = role_text(title, company)
+    location_words = set(normalize_terms(" ".join(profile.preferences.cities or ["Oslo"])).split())
     score = 0
     for term in positive:
+        term_words = set(term.split()) - SENIORITY_WORDS - location_words
+        if not term_words:
+            continue
         if contains_term(text, term):
             score += 2
             continue
-        words = set(term.split()) - SENIORITY_WORDS - GENERIC_ROLE_WORDS
-        score += sum(contains_term(text, word) for word in words)
+        words = term_words - GENERIC_ROLE_WORDS
+        # A fragment such as BI from "BI analyst" or R from "R analyst"
+        # cannot select a job alone. Keep reordered technical titles such as
+        # "ML Software Engineer" by requiring the rest of "ML engineer" too.
+        if words and all(len(word) <= 2 for word in words):
+            score += int(all(contains_term(text, word) for word in term_words))
+        else:
+            score += sum(contains_term(text, word) for word in words if len(word) > 2)
     return score
 
 
@@ -133,8 +152,8 @@ def filter_jobs(jobs: list, profile: Profile, days: int, english_only: bool, now
         title = normalize_terms(job.title)
         if any(contains_term(title, term) for term in negative):
             continue
-        if positive and not title_relevance(job.title, profile):
-            description = normalize_terms(job.description or "")
+        if positive and not title_relevance(job.title, profile, job.company):
+            description = role_text(job.description or "", job.company)
             if not any(contains_term(description, term) for term in positive):
                 continue
         url = canonical_url(job.url)
@@ -147,7 +166,7 @@ def filter_jobs(jobs: list, profile: Profile, days: int, english_only: bool, now
         selected.append(job)
     return sorted(selected, key=lambda job: (
         job.posted_at is None,
-        -title_relevance(job.title, profile),
+        -title_relevance(job.title, profile, job.company),
         -as_utc(job.posted_at).timestamp() if job.posted_at else 0,
         job.id,
     ))

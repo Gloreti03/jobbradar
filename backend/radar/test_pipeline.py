@@ -166,6 +166,36 @@ class TitleFilterTests(unittest.TestCase):
                 self.job(3, "ML Engineer"), self.job(4, "C#/.NET Developer")]
         self.assertEqual({job.id for job in self.selected(jobs, profile)}, {3, 4})
 
+    def test_short_keywords_use_whole_words_in_titles_and_descriptions(self):
+        profile = Profile(name="Acronyms", search_terms=["BI", "ML", "AI"])
+        jobs = [self.job(1, "Retail assistant", description="We sell HTML email templates and bicycles."),
+                self.job(2, "BI Analyst"), self.job(3, "ML Engineer"), self.job(4, "AI Researcher"),
+                self.job(5, "Researcher", description="Develop ML models.")]
+        self.assertEqual({job.id for job in self.selected(jobs, profile)}, {2, 3, 4, 5})
+
+    def test_employer_bi_is_not_a_business_intelligence_skill(self):
+        profile = Profile(name="Andrea regression", search_terms=["BI", "BI analyst", "internship Oslo"])
+        jobs = [self.job(26, "HIJA BI søker butikkmedarbeider - Oslo", company="Hija Bi As",
+                         description="Vi i HIJA BI søker en butikkmedarbeider med interesse for mote."),
+                self.job(2, "BI Analyst - Oslo")]
+        self.assertEqual([job.id for job in self.selected(jobs, profile)], [2])
+
+    def test_short_fragments_of_multiword_terms_need_role_context(self):
+        profile = Profile(name="Acronyms", search_terms=["BI analyst", "ML engineer", "AI engineer", "R analyst"])
+        jobs = [self.job(1, "HIJA BI søker butikkmedarbeider"),
+                self.job(2, "Account Executive (R-20081)"),
+                self.job(3, "AI Customer Support"),
+                self.job(4, "ML Software Engineer"), self.job(5, "Senior AI Platform Engineer"),
+                self.job(6, "Senior BI Analyst")]
+        self.assertEqual({job.id for job in self.selected(jobs, profile)}, {4, 5, 6})
+
+    def test_location_in_search_phrase_cannot_select_unrelated_jobs(self):
+        profile = Profile(name="Andrea regression", search_terms=["data analyst", "internship Oslo"],
+                          preferences=Preferences(cities=["Oslo"]))
+        jobs = [self.job(1, "Frisør jobb i Oslo"), self.job(2, "Tilkallingsvikar i barnehage, Oslo"),
+                self.job(3, "Summer Internship in Oslo"), self.job(4, "Data Analyst - Oslo")]
+        self.assertEqual({job.id for job in self.selected(jobs, profile)}, {3, 4})
+
     def test_seniority_alone_does_not_select_unrelated_roles(self):
         profile = self.profile.model_copy(update={"search_terms": ["junior", "backend developer"]})
         jobs = [self.job(1, "Junior Accountant"), self.job(2, "Senior Backend Engineer")]

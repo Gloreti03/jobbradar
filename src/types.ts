@@ -1,0 +1,134 @@
+// Mirrors backend schemas.py exactly (snake_case). Do not rename fields.
+
+export type JobSource = "nav" | "teamtailor" | "greenhouse" | "lever" | "ashby" | "extension" | "fixture";
+export type JobStatus = "active" | "inactive";
+export type JobLanguage = "no" | "en";
+export type Verdict = "strong" | "good" | "stretch" | "poor";
+export type ApplicationStatus = "draft" | "applied" | "interviewing" | "rejected" | "offer";
+export type DocLanguage = "en" | "no";
+
+export interface Contacts {
+  email: string | null;
+  phone: string | null;
+  location: string | null;
+  linkedin: string | null;
+  github: string | null;
+  website: string | null;
+}
+export interface LanguageSkill { language: string; level: string }
+export interface Experience {
+  role: string;
+  company: string;
+  location: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  bullets: string[];
+}
+export interface Education {
+  degree: string;
+  institution: string;
+  location: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  details: string[];
+}
+export interface Project { name: string; description: string; tools: string[]; url: string | null }
+export interface Preferences {
+  roles: string[];
+  cities: string[];
+  seniority: string | null;
+  work_modes: string[];
+}
+export interface Profile {
+  name: string;
+  headline: string;
+  contacts: Contacts;
+  summary: string;
+  skills: string[];
+  tools: string[];
+  languages: LanguageSkill[];
+  experiences: Experience[];
+  education: Education[];
+  projects: Project[];
+  preferences: Preferences;
+  search_terms: string[];
+  missing_info: string[];
+}
+export interface ProfileOut { id: number; profile: Profile; extra_text: string; updated_at: string }
+export interface ProfileUpdate { profile: Profile; extra_text?: string | null }
+
+export interface JobOut {
+  id: number;
+  source: JobSource;
+  source_id: string;
+  title: string;
+  company: string | null;
+  location: string | null;
+  description: string | null;
+  url: string;
+  apply_url: string | null;
+  posted_at: string | null; // null = "Date unknown" — never substitute discovered_at
+  expires_at: string | null;
+  discovered_at: string;
+  status: JobStatus;
+  language: JobLanguage | null;
+  norwegian_required: boolean | null;
+}
+export interface MatchOut {
+  score: number;
+  verdict: Verdict;
+  reasons: string[];
+  gaps: string[];
+  to_clarify: string[];
+}
+export interface RadarRequest { days: 3 | 7 | 14 | 30; english_only: boolean; refresh: boolean }
+export interface RadarResult { job: JobOut; match: MatchOut }
+export interface RadarResponse {
+  days_requested: number;
+  days_used: number;
+  widened: boolean;
+  scanned_count: number;
+  candidates_count: number;
+  results: RadarResult[];
+  generated_at: string;
+}
+export interface ApplicationRef { id: number; status: ApplicationStatus }
+export interface JobDetail { job: JobOut; match: MatchOut | null; application: ApplicationRef | null }
+
+export interface TailoredCV {
+  name: string;
+  headline: string;
+  contacts: Contacts;
+  summary: string;
+  skills: string[];
+  experiences: Experience[];
+  education: Education[];
+  projects: Project[];
+  languages: LanguageSkill[];
+}
+export interface ApplicationNotes {
+  keywords_covered: string[];
+  missing_requirements: string[];
+  changes: string[];
+}
+export interface Snapshot { job: JobOut; cv: TailoredCV; cover_letter: string; applied_at: string }
+export interface ApplicationPatch {
+  cv?: TailoredCV | null;
+  cover_letter?: string | null;
+  status?: ApplicationStatus | null;
+}
+export interface ApplicationOut {
+  id: number;
+  job_id: number;
+  job: JobOut;
+  status: ApplicationStatus;
+  language: DocLanguage;
+  cv: TailoredCV;
+  cover_letter: string;
+  notes: ApplicationNotes;
+  snapshot: Snapshot | null;
+  created_at: string;
+  applied_at: string | null;
+}
+
+export const APPLICATION_STATUSES: ApplicationStatus[] = ["draft", "applied", "interviewing", "rejected", "offer"];

@@ -200,8 +200,16 @@ candidate's proof (verbatim quotes). Use it:
   empty, change question 4 or 5 into kind "gap": ask honestly how the candidate would handle
   that missing requirement (never imply they have it).
 
-Each question: max 35 words, one question only, natural spoken style, without the candidate's name.
-Ask about what the candidate did (what, how, for whom, result); do not ask "what did you learn".
+Difficulty: this is a FIRST-ROUND interview for a student or junior candidate. Questions must be
+easy to understand and answerable in 1-2 minutes from the candidate's own experience:
+- one simple thing per question: no multi-part questions, no "and how... and why...";
+- no trick questions, no hypothetical case studies, no quiz on definitions or formulas;
+- technical questions ask how the candidate used a tool or would approach a common task of the
+  job, in plain words (e.g. "How have you used SQL in your projects?"), not deep expert detail.
+Variety: the 6 questions must cover 6 DIFFERENT topics. Never ask two questions about the same
+experience, project, tool or requirement, and do not build a question on the previous one.
+Each question: max 25 words, one question only, natural spoken style, without the candidate's name.
+Ask about what the candidate did (what, how, result); do not ask "what did you learn".
 "focus": what the question wants to verify (max 10 words).
 "greeting": one short sentence welcoming the candidate by first name (no question in it).
 Language: "{{language}}" ("no" = Norwegian Bokmål, "en" = English).

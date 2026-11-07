@@ -155,10 +155,21 @@ def interview_turn(application_id: int, body: InterviewTurnRequest, db: Session 
 _VOICE_TAG = re.compile(r"\[[A-Za-z][A-Za-z ,'-]{0,40}\]\s*")
 
 
+# hesitation sounds the speech recogniser writes for the candidate ("Um, I think... hmm")
+_FILLER = re.compile(
+    r"(?<![\w'-])(?:mm+-?hmm+|uh-?huh|u+h+m*|u+m+|h+u+m+|h+m+|m+h*m+|e+r+m+|e+h+m*|a+h+)(?![\w'-])[,.…]*\s*",
+    re.IGNORECASE,
+)
+
+
 def _clean(turn: VoiceTurn) -> str:
     text = turn.content.strip()
     if turn.role == "interviewer":
         text = _VOICE_TAG.sub("", text).strip()
+    else:
+        text = re.sub(r"\s+([,.?!])", r"\1", _FILLER.sub("", text))  # "dashboard , in" -> "dashboard, in"
+        text = re.sub(r",{2,}", ",", text).lstrip(" ,.…").rstrip(" ,")
+        text = text[:1].upper() + text[1:]
     return text
 
 

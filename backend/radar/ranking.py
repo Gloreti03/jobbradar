@@ -2,12 +2,22 @@
 
 import asyncio
 import json
+import math
 
 from pydantic import BaseModel, Field
 
 from llm import LLMError, acomplete_json
 from prompts import NO_INVENTION_RULES, RANKING_SYSTEM
 from schemas import JobOut, MatchOut, Profile
+
+
+def friendlier(match: MatchOut) -> MatchOut:
+    """The model scores students harshly (best real fits ~45-60). A square-root curve lifts the
+    scores while keeping the order: 60 -> 77, 45 -> 67, 25 -> 50, 10 -> 32, 2 -> 14.
+    The verdict follows the new score so the label and the number agree."""
+    score = round(100 * math.sqrt(match.score / 100))
+    verdict = "strong" if score >= 80 else "good" if score >= 65 else "stretch" if score >= 45 else "poor"
+    return match.model_copy(update={"score": score, "verdict": verdict})
 
 
 class RankedJob(BaseModel):
@@ -38,7 +48,7 @@ async def rank_jobs(profile: Profile, jobs: list[JobOut]) -> dict[int, MatchOut]
         returned = [entry.job_id for entry in result.results]
         if set(returned) != expected or len(returned) != len(expected):
             raise LLMError("Ranking must return each supplied job_id exactly once")
-        return {entry.job_id: entry.match for entry in result.results}
+        return {entry.job_id: friendlier(entry.match) for entry in result.results}
 
     async with asyncio.timeout(18):
         batches = await asyncio.gather(*(rank_batch(jobs[start:start + 10]) for start in range(0, len(jobs), 10)))

@@ -188,7 +188,7 @@ class RadarFunnel(Schema):
     keywords: int  # title matches the profile's search terms
     deduplicated: int
     live: int  # still open (liveness check)
-    ranked: int  # sent to the AI ranking
+    ranked: int  # returned results with a score, including cached matches (max 15)
 
 
 class RadarResponse(Schema):

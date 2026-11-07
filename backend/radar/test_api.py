@@ -133,7 +133,7 @@ class RadarApiTests(unittest.TestCase):
         cached_response = self.client.post("/radar", json={})
         self.assertEqual(cached_response.status_code, 200)
         self.assertEqual(cached_response.json()["funnel"]["live"], 1)
-        self.assertEqual(cached_response.json()["funnel"]["ranked"], 0)
+        self.assertEqual(cached_response.json()["funnel"]["ranked"], 1)
         self.assertEqual(self.rank.await_count, 1)
         self.assertEqual(self.client.get(f"/jobs/{job_id}").json()["match"]["score"], 80)
 
@@ -215,9 +215,32 @@ class RadarApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200, response.text)
         data = response.json()
         self.assertEqual(data["funnel"], dict(total=45, recent=45, location=45, language=45,
-                                            keywords=45, deduplicated=45, live=45, ranked=40))
+                                            keywords=45, deduplicated=45, live=45, ranked=15))
         self.assertEqual(data["candidates_count"], 40)
         self.assertEqual(len(data["results"]), 15)
+        self.assertEqual(self.rank.await_count, 1)
+        self.assertEqual(len(self.rank.call_args.args[1]), 40)
+        cached = self.client.post("/radar", json={})
+        self.assertEqual(cached.status_code, 200, cached.text)
+        self.assertEqual(cached.json()["funnel"]["ranked"], 15)
+        self.assertEqual(cached.json()["results"], data["results"])
+        self.assertEqual(self.rank.await_count, 1)
+
+    def test_funnel_ranked_includes_cached_and_new_matches_in_the_same_response(self):
+        self.add_profile()
+        first = self.add_job("first")
+        self.assertEqual(self.client.post("/radar", json={}).status_code, 200)
+        second = self.add_job("second")
+        response = self.client.post("/radar", json={})
+        self.assertEqual(response.status_code, 200, response.text)
+        data = response.json()
+        self.assertEqual({row["job"]["id"] for row in data["results"]}, {first, second})
+        self.assertEqual(data["funnel"]["ranked"], 2)
+        self.assertEqual([job.id for job in self.rank.call_args.args[1]], [second])
+
+    def test_fixture_funnel_ranked_matches_returned_results(self):
+        data = load_fixture("radar_response")
+        self.assertEqual(data["funnel"]["ranked"], len(data["results"]))
 
     def test_profile_changed_during_ranking_returns_409_without_cached_matches(self):
         self.add_profile()

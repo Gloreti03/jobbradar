@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 @router.post("", response_model=RadarResponse)
 async def run_radar(body: RadarRequest):
-    """Funnel counts use days_used. ranked counts new AI evaluations, excluding cache hits."""
+    """Funnel counts use days_used. ranked counts returned results, including cache hits."""
     with SessionLocal() as db:
         profile = get_profile(db)
         profile_row = get_profile_row(db)
@@ -70,7 +70,6 @@ async def run_radar(body: RadarRequest):
                if profile_updated and as_utc(match.created_at) >= profile_updated}
     job_models = [job_out(job) for job in candidates]
     missing = [job for job in job_models if job.id not in matches]
-    funnel.ranked = len(missing)
     if missing:
         if not DEEPSEEK_API_KEY:
             raise HTTPException(status_code=503, detail="Set DEEPSEEK_API_KEY in backend/.env to rank real jobs")
@@ -97,10 +96,12 @@ async def run_radar(body: RadarRequest):
             ))
 
     ordered = sorted(job_models, key=lambda job: (job.posted_at is None, -matches[job.id].score, job.id))
+    results = [RadarResult(job=job, match=matches[job.id]) for job in ordered[:15]]
+    funnel.ranked = len(results)
     return RadarResponse(
         days_requested=body.days, days_used=days_used, widened=days_used > body.days,
         scanned_count=len(jobs), candidates_count=len(job_models),
-        results=[RadarResult(job=job, match=matches[job.id]) for job in ordered[:15]],
+        results=results,
         generated_at=datetime.now(timezone.utc),
         funnel=funnel,
     )

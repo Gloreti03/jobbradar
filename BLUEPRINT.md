@@ -35,7 +35,7 @@ Fuori scope: login, invio automatico delle candidature, app mobile, scraping di 
 | Parte | Tecnologia |
 |---|---|
 | Backend + database | **Python 3.11+**, **FastAPI**, **SQLAlchemy 2** + **Pydantic**, **SQLite** (`backend/radar.db`), avvio con `uvicorn` sulla porta **8000** |
-| AI | **DeepSeek API** (compatibile OpenAI) con SDK Python `openai` e `base_url=https://api.deepseek.com`. Variabili in `.env`: `DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`, `MODEL_SMART=deepseek-v4-pro` (profilo, CV, colloquio), `MODEL_FAST=deepseek-flash` (ranking, import). Output sempre in JSON (`response_format={"type": "json_object"}`) validato da Pydantic |
+| AI | **DeepSeek API** (compatibile OpenAI) con SDK Python `openai` e `base_url=https://api.deepseek.com`. Variabili in `.env`: `DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`, `MODEL_SMART=deepseek-v4-pro` (profilo, colloquio), `MODEL_FAST=deepseek-flash` (ranking, import, CV + lettera: lo smart impiega 60-100 s). Output sempre in JSON (`response_format={"type": "json_object"}`) validato da Pydantic |
 | Frontend | **Lovable** (plausibilmente): genera React + Vite + Tailwind in TypeScript, collegato a un repo GitHub. Si sviluppa in locale sulla porta **5173**, rifiniture con Claude Code |
 | Estensione | JavaScript, Manifest V3 (funziona su Opera e Chrome) |
 | Voce (bonus) | ElevenLabs Agents: SDK React nel frontend, URL firmato generato dal backend |

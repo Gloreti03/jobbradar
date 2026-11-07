@@ -17,6 +17,7 @@ Proxy (BLUEPRINT sec. 9): if application_id is not in the DB but is the id of
 fixtures/application.json, that fake application (already applied) is used.
 """
 
+import re
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -150,16 +151,28 @@ def interview_turn(application_id: int, body: InterviewTurnRequest, db: Session 
     return {"interview_id": row.id, "message": message, "question_index": next_index, "done": done}
 
 
+# expressive voice tags the agent puts in its text ("[enthusiastic] Great..."): spoken as tone, not words
+_VOICE_TAG = re.compile(r"\[[A-Za-z][A-Za-z ,'-]{0,40}\]\s*")
+
+
+def _clean(turn: VoiceTurn) -> str:
+    text = turn.content.strip()
+    if turn.role == "interviewer":
+        text = _VOICE_TAG.sub("", text).strip()
+    return text
+
+
 def _assign_questions(turns: list[VoiceTurn], plan: list[InterviewQuestion]) -> list[TranscriptTurn]:
     """Voice call messages -> transcript with question ids.
     The agent asks the plan questions in order: each candidate answer belongs to the current
     question; the next interviewer message moves to the following one. Consecutive candidate
-    messages (the speech recogniser splits long answers) are merged into one answer."""
+    messages (the speech recogniser splits long answers) are merged into one answer.
+    Expressive tags like "[enthusiastic]" are removed from the interviewer's messages."""
     out: list[TranscriptTurn] = []
     index = 0  # current question (0-based)
     answered_current = False
     for turn in turns:
-        text = turn.content.strip()
+        text = _clean(turn)
         if not text:
             continue
         if turn.role == "candidate":

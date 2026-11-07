@@ -174,6 +174,51 @@ class RadarApiTests(unittest.TestCase):
                 self.assertEqual(result.funnel.language, 4)
         self.assertEqual(self.client.post("/radar", json={"days": 2}).status_code, 422)
 
+    def test_score_precedes_publication_date_including_cached_results(self):
+        self.add_profile()
+        low = self.add_job("low")
+        high = self.add_job("high", posted_at=None)
+        middle = self.add_job("middle")
+        scores = {low: 5, high: 20, middle: 10}
+        self.rank.side_effect = lambda profile, jobs: {
+            job.id: example_match(scores[job.id]) for job in jobs
+        }
+        response = self.client.post("/radar", json={})
+        self.assertEqual(response.status_code, 200, response.text)
+        results = response.json()["results"]
+        self.assertEqual([row["job"]["id"] for row in results], [high, middle, low])
+        self.assertIsNone(results[0]["job"]["posted_at"])
+        cached = self.client.post("/radar", json={})
+        self.assertEqual(cached.status_code, 200, cached.text)
+        self.assertEqual(cached.json()["results"], results)
+        self.assertEqual(self.rank.await_count, 1)
+
+    def test_high_scoring_unknown_date_job_is_kept_in_top_fifteen(self):
+        self.add_profile()
+        for index in range(16):
+            self.add_job(str(index))
+        best = self.add_job("best", posted_at=None)
+        self.rank.side_effect = lambda profile, jobs: {
+            job.id: example_match(90 if job.id == best else 5) for job in jobs
+        }
+        response = self.client.post("/radar", json={})
+        self.assertEqual(response.status_code, 200, response.text)
+        data = response.json()
+        self.assertEqual(data["results"][0]["job"]["id"], best)
+        self.assertEqual(len(data["results"]), 15)
+        self.assertEqual(data["funnel"]["ranked"], 15)
+
+    def test_equal_scores_use_known_dates_then_recency_then_id(self):
+        self.add_profile()
+        older = self.add_job("older", posted_at=self.now - timedelta(days=2))
+        newest = self.add_job("newest")
+        unknown = self.add_job("unknown", posted_at=None)
+        same_date = self.add_job("same-date")
+        response = self.client.post("/radar", json={})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual([row["job"]["id"] for row in response.json()["results"]],
+                         [newest, same_date, older, unknown])
+
     def test_funnel_counts_each_stage_and_liveness_outcome(self):
         self.profile = Profile(name="Funnel", search_terms=["data analyst"])
         self.add_profile()

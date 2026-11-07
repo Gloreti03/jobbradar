@@ -180,12 +180,35 @@ def pdf_to_text(data: bytes) -> str:
     raise GarbledText(reason)
 
 
+_SENSITIVE_PATTERNS = [
+    # Italian codice fiscale (also when preceded by its label)
+    (re.compile(r"(?i)(codice\s+fiscale\s*:?\s*)?\b[A-Z]{6}\d{2}[A-EHLMPR-T]\d{2}[A-Z]\d{3}[A-Z]\b"), "[tax id removed]"),
+    # "nato/nata a ROMA (RM), ITALIA il 19/10/2002" -> place and date of birth
+    (re.compile(r"(?i)\bnat[oa]\s+a\s+[^,\n]{1,60}(?:,\s*[^,\n]{1,30})?\s+il\s+\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}"), "[birth data removed]"),
+    (re.compile(r"(?i)\b(born|date of birth|data di nascita|fødselsdato)\s*:?\s*(on\s+)?\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}"), "[birth date removed]"),
+    # student ID numbers
+    (re.compile(r"(?i)\b(matricola|student\s+id|studentnummer)\s*:?\s*[A-Z]?\d{4,}\b"), "[student id removed]"),
+    # IBAN and Norwegian national identity number (11 digits)
+    (re.compile(r"\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]){11,30}\b"), "[iban removed]"),
+    (re.compile(r"(?i)\b(fødselsnummer|personnummer)\s*:?\s*\d{6}\s?\d{5}\b"), "[national id removed]"),
+]
+
+
+def redact_personal_ids(text: str) -> str:
+    """Removes identifiers a profile never needs (tax code, birth data, student/national IDs, IBAN)
+    from extra documents before they are stored or sent to the model."""
+    for pattern, replacement in _SENSITIVE_PATTERNS:
+        text = pattern.sub(replacement, text)
+    return text
+
+
 def file_to_text(filename: str, data: bytes) -> tuple[str, str | None]:
-    """Text from an extra file (PDF, .txt, .md) -> (text, warning for the user or None)."""
+    """Text from an extra file (PDF, .txt, .md) -> (text, warning for the user or None).
+    Personal identifiers (tax code, birth data, student IDs...) are removed here."""
     name = (filename or "").lower()
     if name.endswith(".pdf"):
         try:
-            text = pdf_to_text(data)
+            text = redact_personal_ids(pdf_to_text(data))
             if text.startswith(OCR_NOTE):
                 return text, f"{filename}: read with OCR (scan or unreadable fonts). Check courses and grades in your profile."
             return text, None
@@ -193,7 +216,7 @@ def file_to_text(filename: str, data: bytes) -> tuple[str, str | None]:
             log.warning("Skipping extra PDF %s: %s", filename, err)
             return "", f"{filename}: the text could not be read ({err}). Paste its content in 'More about you'."
     if name.endswith(TEXT_EXTENSIONS):
-        return data.decode("utf-8", errors="ignore"), None
+        return redact_personal_ids(data.decode("utf-8", errors="ignore")), None
     return "", f"{filename}: unsupported file type (use PDF, .txt or .md)."
 
 

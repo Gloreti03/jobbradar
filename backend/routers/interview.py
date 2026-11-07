@@ -6,12 +6,21 @@ Flow (text mode):
   POST /interview/{application_id}/feedback  -> final evaluation (saved, returned again on later calls)
   GET  /interview/{application_id}           -> latest interview (plan + transcript + feedback), extra
 
+Flow (voice mode, ElevenLabs):
+  POST /interview/{application_id}/start  {"mode": "voice"}  -> same plan; the frontend passes it to the agent
+  ... the conversation happens between the browser and ElevenLabs ...
+  POST /interview/{application_id}/voice-transcript          -> saves what was said (question ids assigned here)
+  POST /interview/{application_id}/feedback                  -> same evaluation as text mode
+
 Unlocked only for applications in status applied/interviewing/rejected/offer (with a snapshot).
 Proxy (BLUEPRINT sec. 9): if application_id is not in the DB but is the id of
 fixtures/application.json, that fake application (already applied) is used.
 """
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -35,6 +44,17 @@ from services import interview as svc
 router = APIRouter(prefix="/interview", tags=["interview"])
 
 UNLOCKED = {"applied", "interviewing", "rejected", "offer"}
+
+
+class VoiceTurn(BaseModel):
+    role: Literal["interviewer", "candidate"]
+    content: str
+
+
+class VoiceTranscriptRequest(BaseModel):
+    """Body of POST /interview/{id}/voice-transcript: the messages of the ElevenLabs call, in order."""
+
+    transcript: list[VoiceTurn] = Field(max_length=200)
 
 
 def _load_application(db: Session, application_id: int) -> tuple[Snapshot, ApplicationNotes, str]:
@@ -128,6 +148,60 @@ def interview_turn(application_id: int, body: InterviewTurnRequest, db: Session 
     row.transcript = transcript  # reassign: SQLAlchemy does not track in-place JSON changes
     db.commit()
     return {"interview_id": row.id, "message": message, "question_index": next_index, "done": done}
+
+
+def _assign_questions(turns: list[VoiceTurn], plan: list[InterviewQuestion]) -> list[TranscriptTurn]:
+    """Voice call messages -> transcript with question ids.
+    The agent asks the plan questions in order: each candidate answer belongs to the current
+    question; the next interviewer message moves to the following one. Consecutive candidate
+    messages (the speech recogniser splits long answers) are merged into one answer."""
+    out: list[TranscriptTurn] = []
+    index = 0  # current question (0-based)
+    answered_current = False
+    for turn in turns:
+        text = turn.content.strip()
+        if not text:
+            continue
+        if turn.role == "candidate":
+            if index >= len(plan):
+                continue  # talking after the last question: not part of the interview
+            if out and out[-1].role == "candidate":
+                out[-1] = out[-1].model_copy(update={"content": f"{out[-1].content} {text}"})
+            else:
+                out.append(TranscriptTurn(role="candidate", content=text, question_id=plan[index].id))
+            answered_current = True
+        else:
+            if answered_current:
+                index += 1
+                answered_current = False
+            qid = plan[index].id if index < len(plan) else None
+            out.append(TranscriptTurn(role="interviewer", content=text, question_id=qid))
+    return out
+
+
+@router.post("/{application_id}/voice-transcript", response_model=InterviewOut)
+def save_voice_transcript(application_id: int, body: VoiceTranscriptRequest, db: Session = Depends(get_db)):
+    """Saves the transcript of the voice call into the latest interview (started with mode "voice"),
+    replacing what was there; then POST /feedback evaluates it like a text interview."""
+    _load_application(db, application_id)
+    row = _latest_interview(db, application_id)
+    plan = [InterviewQuestion.model_validate(q) for q in row.plan]
+    transcript = _assign_questions(body.transcript, plan)
+    if not any(t.role == "candidate" for t in transcript):
+        raise HTTPException(status_code=422, detail="No answers in the voice transcript: nothing to evaluate")
+
+    row.mode = "voice"
+    row.transcript = [t.model_dump() for t in transcript]
+    row.feedback = None  # a new transcript needs a new evaluation
+    db.commit()
+    return {
+        "id": row.id,
+        "application_id": row.application_id,
+        "mode": row.mode,
+        "plan": row.plan,
+        "transcript": row.transcript,
+        "feedback": None,
+    }
 
 
 @router.post("/{application_id}/feedback", response_model=InterviewFeedback)

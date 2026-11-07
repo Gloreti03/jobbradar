@@ -19,7 +19,14 @@ from prompts import (
     INTERVIEW_TURN_SYSTEM,
     INTERVIEW_TURN_USER,
 )
-from schemas import ApplicationNotes, InterviewFeedback, InterviewQuestion, Snapshot, TranscriptTurn
+from schemas import (
+    ApplicationNotes,
+    InterviewFeedback,
+    InterviewQuestion,
+    QuestionFeedback,
+    Snapshot,
+    TranscriptTurn,
+)
 
 log = logging.getLogger("interview")
 
@@ -58,6 +65,22 @@ class _Plan(BaseModel):
 
 class _TurnMessage(BaseModel):
     message: str
+
+
+_PLACEHOLDERS = {"", "n/a", "na", "n.a.", "none", "-", "null", "not applicable", "not answered", "tbd"}
+
+
+class _QuestionFeedback(QuestionFeedback):
+    @field_validator("better_answer")
+    @classmethod
+    def _real_answer(cls, value: str) -> str:
+        if value.strip().strip(".").casefold() in _PLACEHOLDERS or len(value.split()) < 8:
+            raise ValueError("better_answer must be a full example answer built from the CV facts, never n/a or empty")
+        return value
+
+
+class _Feedback(InterviewFeedback):
+    questions: list[_QuestionFeedback]
 
 
 # --- helpers ---
@@ -154,10 +177,11 @@ def make_feedback(
         FEEDBACK_MODEL,
         system=INTERVIEW_FEEDBACK_SYSTEM.format(language=language),
         user=user,
-        schema=InterviewFeedback,
+        schema=_Feedback,  # rejects "n/a" better answers -> llm.py retries with the error
         temperature=0.3,
         max_tokens=6000,
     )
+    feedback = InterviewFeedback.model_validate(feedback.model_dump())
     # One entry per planned question, in plan order, with the exact question text.
     by_id = {q.question_id: q for q in feedback.questions}
     fixed = []

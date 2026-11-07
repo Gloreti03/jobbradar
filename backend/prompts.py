@@ -211,6 +211,8 @@ Give:
 - questions: one entry for EACH question in the plan (same question_id and question text),
   with score 1-5, a comment (max 40 words) and better_answer (max 90 words, first person).
   A question the candidate did not answer gets score 1 and comment "Not answered".
+  better_answer is ALWAYS a real example answer (never empty, never "n/a", "-" or "none"),
+  also for unanswered questions: write it from the CV and cover letter facts.
 
 {NO_INVENTION_RULES}
 - better_answer may ONLY use facts present in the CV, cover letter and the candidate's answers.

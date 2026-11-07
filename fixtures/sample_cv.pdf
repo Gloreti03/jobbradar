@@ -1,0 +1,62 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 1258 >>
+stream
+BT
+/F1 10 Tf
+13 TL
+50 800 Td
+(MARCO ESPOSITO) Tj T*
+(Software developer - Oslo, Norway - marco.esposito@example.com - +47 900 00 000) Tj T*
+(github.com/example-marco) Tj T*
+() Tj T*
+(PROFILE) Tj T*
+(Backend developer with 3 years of experience in Python and Django, now based in Oslo.) Tj T*
+() Tj T*
+(EXPERIENCE) Tj T*
+(Backend Developer - Pixelwave SRL, Naples, Italy - 03/2022 - 08/2025) Tj T*
+(- Built REST APIs in Django REST Framework serving 50k daily users) Tj T*
+(- Migrated the main database from MySQL to PostgreSQL) Tj T*
+(- Set up CI pipelines with GitHub Actions and Docker) Tj T*
+(Junior Developer \(internship\) - Codelab, Naples - 09/2021 - 02/2022) Tj T*
+(- Wrote unit tests in pytest and fixed bugs in a Flask application) Tj T*
+() Tj T*
+(EDUCATION) Tj T*
+(BSc Computer Engineering - University of Naples Federico II - 2018 - 2021) Tj T*
+() Tj T*
+(SKILLS) Tj T*
+(Python, Django, Flask, FastAPI, PostgreSQL, MySQL, Docker, Git, GitHub Actions, REST APIs, Linux) Tj T*
+() Tj T*
+(LANGUAGES) Tj T*
+(Italian \(native\), English \(fluent, C1\), Norwegian \(beginner, taking a course\)) Tj T*
+() Tj T*
+(PROJECTS) Tj T*
+(Ruter delay tracker - FastAPI service that stores public transport delays in Oslo \(github.com/example-marco/ruter\)) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000001551 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1648
+%%EOF

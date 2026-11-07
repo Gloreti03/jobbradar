@@ -55,7 +55,7 @@ export interface Profile {
   search_terms: string[];
   missing_info: string[];
 }
-export interface ProfileOut { id: number; profile: Profile; extra_text: string; updated_at: string; warnings?: string[] }
+export interface ProfileOut { id: number; profile: Profile; extra_text: string; updated_at: string; warnings?: string[]; reset?: boolean }
 export interface ProfileUpdate { profile: Profile; extra_text?: string | null }
 export interface MissingInfoAnswer { question: string; answer: string }
 export interface ProfileAnswers { answers: MissingInfoAnswer[] }

@@ -1,12 +1,15 @@
 """A — CV PDF + extra material -> structured Profile.
 
-DeepSeek only accepts text: the PDF is converted with pypdf, then a single call to the fast model.
+DeepSeek only accepts text: the PDF is converted to text (pypdf -> pdfminer -> OCR as fallbacks),
+then a single call to the fast model.
 """
 
 import io
 import json
 import logging
 import re
+import threading
+import time
 import unicodedata
 
 from pypdf import PdfReader
@@ -84,9 +87,84 @@ def _pdfminer_text(data: bytes) -> str:
         return ""
 
 
+MAX_OCR_PAGES = 5
+OCR_SCALE = 2.5  # render at ~180 dpi: good accuracy, ~1-3 s per page
+OCR_MIN_SCORE = 0.5
+# prefix of OCR text: tells the model (and the code) that spaces/characters may be off
+OCR_NOTE = "[Text recovered with OCR: words may be joined together and a few characters may be wrong.]"
+_ocr_engine = None
+_ocr_lock = threading.Lock()
+
+
+def _get_ocr_engine():
+    """Loads RapidOCR once (slow the first time: onnxruntime + opencv imports)."""
+    global _ocr_engine
+    with _ocr_lock:
+        if _ocr_engine is None:
+            from rapidocr_onnxruntime import RapidOCR
+
+            _ocr_engine = RapidOCR()
+    return _ocr_engine
+
+
+def warm_up_ocr() -> None:
+    """Called in a background thread at startup so the first scanned upload is not slow."""
+    start = time.monotonic()
+    try:
+        _get_ocr_engine()
+        log.info("OCR engine ready in %.1fs", time.monotonic() - start)
+    except Exception as err:  # OCR is optional
+        log.warning("OCR engine not available: %s", err)
+
+
+def _ocr_lines(items: list) -> list[str]:
+    """RapidOCR boxes -> text lines in reading order (top to bottom, then left to right)."""
+    boxes = []
+    for box, text, score in items:
+        if float(score) < OCR_MIN_SCORE or not text.strip():
+            continue
+        ys = [p[1] for p in box]
+        boxes.append((min(ys), max(ys), min(p[0] for p in box), text.strip()))
+    boxes.sort()
+    lines: list[list[tuple]] = []
+    for top, bottom, left, text in boxes:
+        middle = (top + bottom) / 2
+        if lines and lines[-1][0][0] <= middle <= lines[-1][0][1]:  # same line as the previous box
+            lines[-1].append((top, bottom, left, text))
+        else:
+            lines.append([(top, bottom, left, text)])
+    return [" ".join(t for *_, t in sorted(line, key=lambda b: b[2])) for line in lines]
+
+
+def _ocr_text(data: bytes) -> str:
+    """Last resort for scans and PDFs with broken fonts: render the pages and read them with OCR."""
+    try:
+        import numpy as np
+        import pypdfium2 as pdfium
+    except ImportError as err:  # OCR is optional: without it we just warn the user
+        log.warning("OCR not available: %s", err)
+        return ""
+    start = time.monotonic()
+    try:
+        engine = _get_ocr_engine()
+        pdf = pdfium.PdfDocument(data)
+        pages = []
+        for i in range(min(len(pdf), MAX_OCR_PAGES)):
+            image = pdf[i].render(scale=OCR_SCALE).to_pil().convert("RGB")
+            # no angle classifier: pages are upright, and it flips single digits (6 read as 9)
+            result, _ = engine(np.array(image), use_cls=False)
+            pages.append("\n".join(_ocr_lines(result or [])))
+    except Exception as err:  # never let OCR break an upload
+        log.warning("OCR failed: %s", err)
+        return ""
+    log.info("OCR read %d page(s) in %.1fs", len(pages), time.monotonic() - start)
+    text = "\n\n".join(p for p in pages if p.strip())
+    return f"{OCR_NOTE}\n{text}" if text else ""
+
+
 def pdf_to_text(data: bytes) -> str:
-    """PDF -> text. Tries pypdf, then pdfminer (different font decoding) if the text looks corrupted.
-    Raises NotAPdf, or GarbledText when neither gives readable text."""
+    """PDF -> text. Tries pypdf, then pdfminer (different font decoding), then OCR (scans, broken fonts).
+    Raises NotAPdf, or GarbledText when nothing gives readable text."""
     text = _pypdf_text(data)
     ok, reason = text_quality(text)
     if ok:
@@ -95,6 +173,10 @@ def pdf_to_text(data: bytes) -> str:
     if text_quality(alt)[0]:
         log.info("pypdf text was unusable (%s): using pdfminer", reason)
         return alt
+    ocr = _ocr_text(data)
+    if text_quality(ocr)[0]:
+        log.info("pypdf and pdfminer text unusable (%s): using OCR", reason)
+        return ocr
     raise GarbledText(reason)
 
 
@@ -103,7 +185,10 @@ def file_to_text(filename: str, data: bytes) -> tuple[str, str | None]:
     name = (filename or "").lower()
     if name.endswith(".pdf"):
         try:
-            return pdf_to_text(data), None
+            text = pdf_to_text(data)
+            if text.startswith(OCR_NOTE):
+                return text, f"{filename}: read with OCR (scan or unreadable fonts). Check courses and grades in your profile."
+            return text, None
         except UnreadableDocument as err:
             log.warning("Skipping extra PDF %s: %s", filename, err)
             return "", f"{filename}: the text could not be read ({err}). Paste its content in 'More about you'."

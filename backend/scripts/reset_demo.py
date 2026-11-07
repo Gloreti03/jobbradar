@@ -33,24 +33,40 @@ from fastapi.testclient import TestClient  # noqa: E402
 from db import SessionLocal, init_db  # noqa: E402
 from main import app  # noqa: E402
 from radar.scanner import catalogue_stats, default_config, load_seed, scan  # noqa: E402
-from services.profile_extract import extract_profile, pdf_to_text  # noqa: E402
+from services.profile_extract import extract_profile, file_to_text, pdf_to_text  # noqa: E402
 from services.profile_store import save_profile  # noqa: E402
 
 
+CV_NAME_HINTS = ("cv", "curriculum", "resume", "résumé")
+
+
 def find_cv(cv: Path | None) -> Path:
+    """--cv, else the only PDF in demo/, else the only PDF whose name contains cv/curriculum/resume."""
     if cv:
         return cv
     pdfs = sorted(DEMO_DIR.glob("*.pdf"))
-    if len(pdfs) != 1:
-        sys.exit(f"Put exactly one CV PDF in {DEMO_DIR} (found {len(pdfs)}) or pass --cv")
-    return pdfs[0]
+    if len(pdfs) == 1:
+        return pdfs[0]
+    named = [p for p in pdfs if any(h in p.name.lower() for h in CV_NAME_HINTS)]
+    if len(named) == 1:
+        return named[0]
+    sys.exit(f"Cannot tell which PDF in {DEMO_DIR} is the CV ({[p.name for p in pdfs]}): "
+             "put 'cv' in its file name or pass --cv")
 
 
-def extra_material() -> str:
-    """Every .txt / .md in demo/ is used as extra material about the candidate."""
-    parts = [f"--- {p.name} ---\n{p.read_text(encoding='utf-8').strip()}"
-             for p in sorted(DEMO_DIR.glob("*")) if p.suffix in (".txt", ".md")]
-    return "\n\n".join(parts)
+def extra_material(cv: Path) -> tuple[str, list[str]]:
+    """Every other file in demo/ (PDF, .txt, .md) is extra material about the candidate.
+    -> (text, warnings for files that could not be read)."""
+    parts, warnings = [], []
+    for p in sorted(DEMO_DIR.iterdir()):
+        if p.resolve() == cv.resolve() or p.suffix.lower() not in (".pdf", ".txt", ".md"):
+            continue
+        text, warning = file_to_text(p.name, p.read_bytes())
+        if warning:
+            warnings.append(warning)
+        if text.strip():
+            parts.append(f"--- {p.name} ---\n{text.strip()}")
+    return "\n\n".join(parts), warnings
 
 
 def step(msg: str) -> float:
@@ -60,7 +76,7 @@ def step(msg: str) -> float:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Reset the demo database")
-    parser.add_argument("--cv", type=Path, help="CV PDF (default: the only PDF in demo/)")
+    parser.add_argument("--cv", type=Path, help="CV PDF (default: the PDF in demo/ with cv/curriculum in its name)")
     parser.add_argument("--scan", action="store_true", help="fresh scan of the sources instead of the seed")
     # demo story: "we widen the search to 30 days" -> the best match (Schibsted Data Scientist) is from mid-October
     parser.add_argument("--days", type=int, default=30, choices=[3, 7, 14, 30], help="Radar window for the warm-up run")
@@ -86,7 +102,11 @@ def main() -> None:
           f"| Norwegian required {stats['norwegian_required_percent']}%  ({time.time() - t:.1f}s)")
 
     t = step(f"Profile from {cv.name}")
-    extra = extra_material()
+    extra, warnings = extra_material(cv)
+    extra_files = [p.name for p in sorted(DEMO_DIR.iterdir()) if p != cv and p.suffix.lower() in (".pdf", ".txt", ".md")]
+    print(f"   extra material: {extra_files or 'none'} ({len(extra)} chars)")
+    for w in warnings:
+        print(f"   WARNING {w}")
     profile = extract_profile(pdf_to_text(cv.read_bytes()), extra)
     with SessionLocal() as db:
         save_profile(db, profile, extra)

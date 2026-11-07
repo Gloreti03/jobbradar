@@ -7,6 +7,7 @@ a conversation. Switch FEEDBACK_MODEL to "smart" only if the feedback quality is
 
 import json
 import logging
+import re
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -180,14 +181,25 @@ def _transcript_text(transcript: list[TranscriptTurn]) -> str:
 def make_feedback(
     snapshot: Snapshot, plan: list[InterviewQuestion], transcript: list[TranscriptTurn], language: str
 ) -> InterviewFeedback:
+    # Only the questions the candidate answered are evaluated: the interview may be stopped
+    # early on purpose (the demo does 2 exchanges), unasked questions must not be scored.
+    answered_ids = {t.question_id for t in transcript if t.role == "candidate" and t.question_id is not None}
+    evaluated = [q for q in plan if q.id in answered_ids]
+    turns = [t for t in transcript if t.question_id in answered_ids]  # drops unanswered question + closing
+    stopped_note = (
+        f"; the interview was stopped on purpose after {len(evaluated)} of {len(plan)} questions"
+        if len(evaluated) < len(plan)
+        else ""
+    )
     user = INTERVIEW_FEEDBACK_USER.format(
         title=snapshot.job.title,
         company=snapshot.job.company or "(unknown)",
         description=_description(snapshot),
         cv_json=_cv_json(snapshot),
         cover_letter=snapshot.cover_letter,
-        plan_json=json.dumps([q.model_dump() for q in plan], ensure_ascii=False),
-        transcript=_transcript_text(transcript),
+        stopped_note=stopped_note,
+        plan_json=json.dumps([q.model_dump() for q in evaluated], ensure_ascii=False),
+        transcript=_transcript_text(turns),
     )
     feedback = complete_json(
         FEEDBACK_MODEL,
@@ -199,12 +211,30 @@ def make_feedback(
         reasoning_effort=FEEDBACK_REASONING,
     )
     feedback = InterviewFeedback.model_validate(feedback.model_dump())
-    # One entry per planned question, in plan order, with the exact question text.
+    # One entry per ANSWERED question, in plan order, with the exact question text.
     by_id = {q.question_id: q for q in feedback.questions}
     fixed = []
-    for q in plan:
+    for q in evaluated:
         item = by_id.get(q.id)
         if item is None:
             continue
-        fixed.append(item.model_copy(update={"question": q.question}))
+        better = _strip_invented_lessons(item.better_answer)
+        fixed.append(item.model_copy(update={"question": q.question, "better_answer": better}))
     return feedback.model_copy(update={"questions": fixed})
+
+
+_LESSON = re.compile(
+    r"\b(what i (took|learned|learnt|took away)|i (learned|learnt|realised|realized|discovered) (that|how|the)"
+    r"|(this|it|that) taught me|taught me (that|how)|my (key |main )?takeaway|the (key |main )?(lesson|insight))\b",
+    re.IGNORECASE,
+)
+
+
+def _strip_invented_lessons(text: str) -> str:
+    """Safety net: drop sentences that add a "lesson learned" / insight (BLUEPRINT sec. 8).
+    Keeps the text unchanged if removing them would leave almost nothing."""
+    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+    kept = [s for s in sentences if not _LESSON.search(s)]
+    if len(kept) == len(sentences) or len(" ".join(kept).split()) < 8:
+        return text
+    return " ".join(kept)

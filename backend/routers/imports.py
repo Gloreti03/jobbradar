@@ -1,7 +1,7 @@
-"""Import dall'estensione (owner: Matilde). STUB: risponde con un job_id finto.
+"""Import from the browser extension (owner: Matilde). STUB: answers with a fake job_id.
 
-Nota: questo router va incluso in main.py PRIMA di routers/jobs.py
-(POST /jobs/import non deve finire su /jobs/{job_id}).
+Note: this router must be included in main.py BEFORE routers/jobs.py
+(POST /jobs/import must not end up on /jobs/{job_id}).
 """
 
 from fastapi import APIRouter

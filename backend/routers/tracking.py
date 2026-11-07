@@ -1,4 +1,4 @@
-""""I applied" + snapshot (owner: Matilde). STUB: restituisce fixtures/application.json (già applied)."""
+""""I applied" + snapshot (owner: Matilde). STUB: returns fixtures/application.json (already applied)."""
 
 from fastapi import APIRouter, HTTPException
 

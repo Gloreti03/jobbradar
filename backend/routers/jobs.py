@@ -1,4 +1,4 @@
-"""B — Dettaglio annuncio (owner: Stefano). STUB: legge fixtures/jobs.json + radar_response + application."""
+"""B — Job detail (owner: Stefano). STUB: reads fixtures/jobs.json + radar_response + application."""
 
 from fastapi import APIRouter
 

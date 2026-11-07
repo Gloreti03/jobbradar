@@ -1,9 +1,9 @@
-"""CONTRATTO tra frontend, estensione e backend (BLUEPRINT sez. 6).
+"""CONTRACT between frontend, extension and backend (BLUEPRINT sec. 6).
 
-- Tutti i campi sono snake_case.
-- I file in fixtures/ hanno ESATTAMENTE queste forme: se un'API reale risponde
-  diversamente è un bug dell'API.
-- Chi cambia questo file lo dice nel gruppo (owner: Gabriele).
+- All fields are snake_case.
+- The files in fixtures/ have EXACTLY these shapes: if a real API answers
+  differently, that is an API bug.
+- Whoever changes this file tells the group (owner: Gabriele).
 """
 
 from datetime import datetime
@@ -12,7 +12,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 # ---------------------------------------------------------------------------
-# Tipi comuni
+# Common types
 # ---------------------------------------------------------------------------
 
 JobSource = Literal["nav", "teamtailor", "greenhouse", "lever", "ashby", "extension", "fixture"]
@@ -30,13 +30,13 @@ class Schema(BaseModel):
 
 
 class ErrorResponse(Schema):
-    """Forma di TUTTI gli errori."""
+    """Shape of ALL errors."""
 
     error: str
 
 
 # ---------------------------------------------------------------------------
-# A — Profilo
+# A — Profile
 # ---------------------------------------------------------------------------
 
 
@@ -59,7 +59,7 @@ class Experience(Schema):
     company: str
     location: str | None = None
     start_date: str | None = None  # "YYYY-MM"
-    end_date: str | None = None  # "YYYY-MM"; null = in corso
+    end_date: str | None = None  # "YYYY-MM"; null = ongoing
     bullets: list[str] = []
 
 
@@ -87,7 +87,7 @@ class Preferences(Schema):
 
 
 class Profile(Schema):
-    """Profilo strutturato estratto dal CV (colonna profiles.data)."""
+    """Structured profile extracted from the CV (column profiles.data)."""
 
     name: str
     headline: str = ""
@@ -100,8 +100,8 @@ class Profile(Schema):
     education: list[Education] = []
     projects: list[Project] = []
     preferences: Preferences = Preferences()
-    search_terms: list[str] = Field(default=[], description="20-30 parole chiave EN + NO")
-    missing_info: list[str] = Field(default=[], description="max 5 domande per l'utente")
+    search_terms: list[str] = Field(default=[], description="20-30 keywords, English + Norwegian")
+    missing_info: list[str] = Field(default=[], description="max 5 questions for the user")
 
 
 class ProfileOut(Schema):
@@ -114,14 +114,14 @@ class ProfileOut(Schema):
 
 
 class ProfileUpdate(Schema):
-    """Body di PUT /profile."""
+    """Body of PUT /profile."""
 
     profile: Profile
     extra_text: str | None = None
 
 
 # ---------------------------------------------------------------------------
-# B — Annunci e Radar
+# B — Jobs and Radar
 # ---------------------------------------------------------------------------
 
 
@@ -135,7 +135,7 @@ class JobOut(Schema):
     description: str | None = None
     url: str
     apply_url: str | None = None
-    posted_at: datetime | None = None  # null = "date unknown" (MAI sostituire con discovered_at)
+    posted_at: datetime | None = None  # null = "date unknown" (NEVER replace with discovered_at)
     expires_at: datetime | None = None
     discovered_at: datetime
     status: JobStatus = "active"
@@ -152,7 +152,7 @@ class MatchOut(Schema):
 
 
 class RadarRequest(Schema):
-    """Body di POST /radar."""
+    """Body of POST /radar."""
 
     days: Literal[3, 7, 14, 30] = 7
     english_only: bool = False
@@ -166,11 +166,11 @@ class RadarResult(Schema):
 
 class RadarResponse(Schema):
     days_requested: int
-    days_used: int  # > days_requested se si è allargata la finestra
-    widened: bool  # la UI deve dirlo
-    scanned_count: int  # annunci nel DB considerati
-    candidates_count: int  # passati i filtri e mandati al ranking
-    results: list[RadarResult]  # max 15, ordinati per score
+    days_used: int  # > days_requested if the window was widened
+    widened: bool  # the UI must say so
+    scanned_count: int  # jobs in the DB that were considered
+    candidates_count: int  # passed the filters and were sent to ranking
+    results: list[RadarResult]  # max 15, sorted by score
     generated_at: datetime
 
 
@@ -188,28 +188,28 @@ class JobDetail(Schema):
 
 
 class JobImportRequest(Schema):
-    """Body di POST /jobs/import (dall'estensione)."""
+    """Body of POST /jobs/import (from the extension)."""
 
     url: str
     title: str | None = None
     company: str | None = None
     location: str | None = None
-    text: str | None = None  # testo visibile della pagina
-    json_ld: dict[str, Any] | None = None  # JobPosting schema.org, se presente
+    text: str | None = None  # visible text of the page
+    json_ld: dict[str, Any] | None = None  # schema.org JobPosting, if present
 
 
 class JobImportResponse(Schema):
     job_id: int
-    created: bool  # false se l'annuncio era già nel DB
+    created: bool  # false if the job was already in the DB
 
 
 # ---------------------------------------------------------------------------
-# C — Candidature
+# C — Applications
 # ---------------------------------------------------------------------------
 
 
 class TailoredCV(Schema):
-    """CV su misura: SOLO fatti presenti nel profilo."""
+    """Tailored CV: ONLY facts present in the profile."""
 
     name: str
     headline: str = ""
@@ -224,12 +224,12 @@ class TailoredCV(Schema):
 
 class ApplicationNotes(Schema):
     keywords_covered: list[str] = []
-    missing_requirements: list[str] = []  # lacune: MAI dichiarate nel CV
-    changes: list[str] = []  # "cosa ho cambiato" rispetto al profilo
+    missing_requirements: list[str] = []  # gaps: NEVER claimed in the CV
+    changes: list[str] = []  # "what I changed" compared to the profile
 
 
 class Snapshot(Schema):
-    """Fotografia salvata con "I applied": base del colloquio simulato."""
+    """Snapshot saved with "I applied": basis of the mock interview."""
 
     job: JobOut
     cv: TailoredCV
@@ -238,13 +238,13 @@ class Snapshot(Schema):
 
 
 class ApplicationCreate(Schema):
-    """Body di POST /applications."""
+    """Body of POST /applications."""
 
     job_id: int
 
 
 class ApplicationPatch(Schema):
-    """Body di PATCH /applications/{id}: solo i campi da cambiare."""
+    """Body of PATCH /applications/{id}: only the fields to change."""
 
     cv: TailoredCV | None = None
     cover_letter: str | None = None
@@ -266,7 +266,7 @@ class ApplicationOut(Schema):
 
 
 # ---------------------------------------------------------------------------
-# D — Colloquio simulato e voce
+# D — Mock interview and voice
 # ---------------------------------------------------------------------------
 
 
@@ -274,7 +274,7 @@ class InterviewQuestion(Schema):
     id: int  # 1..6
     kind: QuestionKind
     question: str
-    focus: str  # cosa vuole verificare la domanda
+    focus: str  # what the question wants to verify
 
 
 class TranscriptTurn(Schema):
@@ -288,7 +288,7 @@ class QuestionFeedback(Schema):
     question: str
     score: int = Field(ge=1, le=5)
     comment: str
-    better_answer: str  # costruita SOLO con fatti veri del profilo/CV
+    better_answer: str  # built ONLY from true facts of the profile/CV
 
 
 class InterviewFeedback(Schema):
@@ -307,9 +307,9 @@ class InterviewStartResponse(Schema):
     interview_id: int
     application_id: int
     mode: InterviewMode
-    plan: list[InterviewQuestion]  # 6 domande
-    message: str  # primo messaggio dell'intervistatore
-    question_index: int  # indice (0-based) della domanda in corso
+    plan: list[InterviewQuestion]  # 6 questions
+    message: str  # the interviewer's first message
+    question_index: int  # (0-based) index of the current question
 
 
 class InterviewTurnRequest(Schema):
@@ -318,13 +318,13 @@ class InterviewTurnRequest(Schema):
 
 class InterviewTurnResponse(Schema):
     interview_id: int
-    message: str  # prossima domanda (o chiusura)
+    message: str  # next question (or closing)
     question_index: int
-    done: bool  # true dopo la 6a risposta → chiamare /feedback
+    done: bool  # true after the 6th answer -> call /feedback
 
 
 class InterviewOut(Schema):
-    """Colloquio completo (fixtures/interview.json)."""
+    """Full interview (fixtures/interview.json)."""
 
     id: int
     application_id: int

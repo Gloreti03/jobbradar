@@ -1,13 +1,13 @@
-"""UNICO punto di accesso a DeepSeek (BLUEPRINT sez. 8).
+"""The ONLY entry point to DeepSeek (BLUEPRINT sec. 8).
 
-Uso:
+Usage:
     from llm import complete_json, acomplete_json
     profile = complete_json("smart", system=PROMPT, user=cv_text, schema=Profile)
-    # in parallelo (es. ranking a gruppi):
+    # in parallel (e.g. ranking in groups):
     results = await asyncio.gather(*(acomplete_json("fast", ..., schema=X) for ... in gruppi))
 
-DeepSeek garantisce un JSON valido ma NON lo schema: qui si valida con Pydantic e,
-se fallisce, si riprova mandando l'errore al modello.
+DeepSeek guarantees valid JSON but NOT the schema: we validate with Pydantic and,
+if that fails, retry sending the error back to the model.
 """
 
 import json
@@ -29,7 +29,7 @@ TIMEOUT_S = 90
 
 
 class LLMError(RuntimeError):
-    """Il modello non ha prodotto un JSON valido per lo schema dopo i tentativi."""
+    """The model did not produce JSON valid for the schema after all attempts."""
 
 
 _sync_client: OpenAI | None = None

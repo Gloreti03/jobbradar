@@ -1,4 +1,4 @@
-"""Verifica che fixtures/*.json rispettino schemas.py.  Uso (da backend/):  uv run python scripts/check_fixtures.py"""
+"""Checks that fixtures/*.json comply with schemas.py.  Usage (from backend/):  uv run python scripts/check_fixtures.py"""
 
 import sys
 from pathlib import Path

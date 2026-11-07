@@ -1,4 +1,4 @@
-"""B — Radar (owner: Stefano). STUB: restituisce fixtures/radar_response.json."""
+"""B — Radar (owner: Stefano). STUB: returns fixtures/radar_response.json."""
 
 from fastapi import APIRouter
 

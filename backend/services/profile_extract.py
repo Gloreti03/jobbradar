@@ -1,6 +1,6 @@
-"""A — CV PDF + materiale extra → Profile strutturato.
+"""A — CV PDF + extra material -> structured Profile.
 
-DeepSeek accetta solo testo: il PDF si converte con pypdf, poi un'unica chiamata al modello smart.
+DeepSeek only accepts text: the PDF is converted with pypdf, then a single call to the fast model.
 """
 
 import io
@@ -23,7 +23,7 @@ TEXT_EXTENSIONS = (".txt", ".md")
 
 
 class UnreadableDocument(ValueError):
-    """Il file non contiene testo estraibile (es. PDF scansionato)."""
+    """The file has no extractable text (e.g. a scanned PDF)."""
 
 
 def pdf_to_text(data: bytes) -> str:
@@ -36,7 +36,7 @@ def pdf_to_text(data: bytes) -> str:
 
 
 def file_to_text(filename: str, data: bytes) -> str:
-    """Testo da un file extra (PDF, .txt, .md). Altri formati → stringa vuota."""
+    """Text from an extra file (PDF, .txt, .md). Other formats -> empty string."""
     name = (filename or "").lower()
     if name.endswith(".pdf"):
         try:
@@ -62,14 +62,14 @@ def _dedupe(items: list[str]) -> list[str]:
 
 
 def extract_profile(cv_text: str, extra_text: str = "") -> Profile:
-    """Chiama il modello e ripulisce l'output (limiti del blueprint)."""
+    """Calls the model and cleans up the output (blueprint limits)."""
     if not cv_text.strip() and not extra_text.strip():
         raise UnreadableDocument("No CV text to analyse")
     user = PROFILE_EXTRACT_USER.format(
         cv_text=cv_text[:MAX_CV_CHARS] or "(no CV text: use the extra material)",
         extra_text=extra_text[:MAX_EXTRA_CHARS] or "(none)",
     )
-    # modello veloce: lo smart impiega ~45 s anche su un CV di una pagina (BLUEPRINT: < 30 s)
+    # fast model: the smart one takes ~45 s even on a one-page CV (BLUEPRINT: < 30 s)
     profile = complete_json("fast", PROFILE_EXTRACT_SYSTEM, user, Profile, temperature=0.1, max_tokens=8000)
     profile.search_terms = _dedupe(profile.search_terms)[:MAX_SEARCH_TERMS]
     profile.missing_info = _dedupe(profile.missing_info)[:MAX_MISSING_INFO]

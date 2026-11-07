@@ -1,7 +1,7 @@
-"""C — Profilo + annuncio → CV su misura + cover letter + note.
+"""C — Profile + job ad -> tailored CV + cover letter + notes.
 
-Oltre alle regole nel prompt, qui c'è una rete di sicurezza contro le invenzioni:
-nome, contatti, lingue, date e aziende vengono SEMPRE dal profilo, mai dal modello.
+On top of the prompt rules, there is a safety net against invention here:
+name, contacts, languages, dates and companies ALWAYS come from the profile, never from the model.
 """
 
 import json
@@ -22,7 +22,7 @@ class TailorOutput(Schema):
 
 
 def choose_language(job: JobOut, profile: Profile) -> DocLanguage:
-    """Norvegese solo se l'annuncio è in norvegese E il candidato ha norvegese ≥ B2 (BLUEPRINT sez. 8)."""
+    """Norwegian only if the ad is in Norwegian AND the candidate has Norwegian >= B2 (BLUEPRINT sec. 8)."""
     if job.language != "no":
         return "en"
     for lang in profile.languages:
@@ -36,7 +36,7 @@ def _key(*parts: str | None) -> str:
 
 
 def enforce_facts(cv: TailoredCV, profile: Profile) -> tuple[TailoredCV, list[str]]:
-    """Rimuove dal CV ciò che non esiste nel profilo. Restituisce il CV pulito e cosa è stato tolto."""
+    """Removes from the CV whatever does not exist in the profile. Returns the clean CV and what was removed."""
     removed: list[str] = []
 
     cv.name = profile.name
@@ -63,7 +63,7 @@ def enforce_facts(cv: TailoredCV, profile: Profile) -> tuple[TailoredCV, list[st
         if original is None:
             removed.append(f"education '{edu.degree} at {edu.institution}'")
             continue
-        education.append(original)  # titoli e date non si riscrivono
+        education.append(original)  # degrees and dates are never rewritten
     cv.education = education
 
     by_project = {_key(p.name): p for p in profile.projects}
@@ -93,7 +93,7 @@ def tailor(profile: Profile, job: JobOut, extra_text: str = "") -> tuple[DocLang
         location=job.location or "(unknown)",
         description=(job.description or "(no description available)")[:MAX_DESCRIPTION_CHARS],
     )
-    # modello veloce: ~15 s contro ~60-100 s di quello smart, stessa qualità nei test (BLUEPRINT: < 30 s)
+    # fast model: ~15 s vs ~60-100 s for the smart one, same quality in tests (BLUEPRINT: < 30 s)
     out = complete_json("fast", system, user, TailorOutput, temperature=0.2, max_tokens=8000)
     out.cv, removed = enforce_facts(out.cv, profile)
     if removed:

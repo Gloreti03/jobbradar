@@ -1,4 +1,4 @@
-"""D — URL firmato ElevenLabs (owner: Matilde). STUB: URL finto."""
+"""D — ElevenLabs signed URL (owner: Matilde). STUB: fake URL."""
 
 from fastapi import APIRouter
 

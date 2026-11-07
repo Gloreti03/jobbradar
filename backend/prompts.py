@@ -1,11 +1,11 @@
-"""Tutti i prompt (owner: Gabriele).
+"""All prompts (owner: Gabriele).
 
-Ogni sezione appartiene al suo owner: Stefano modifica RANKING_*, Matilde INTERVIEW_*.
-Toccate solo la vostra sezione per evitare conflitti di merge.
-Lo schema JSON di output lo aggiunge llm.py: qui solo istruzioni.
+Each section belongs to its owner: Stefano edits RANKING_*, Matilde INTERVIEW_*.
+Only touch your own section to avoid merge conflicts.
+The output JSON schema is appended by llm.py: only instructions here.
 """
 
-# Regole comuni a TUTTI i prompt che producono testo sul candidato (BLUEPRINT sez. 8)
+# Rules shared by ALL prompts that produce text about the candidate (BLUEPRINT sec. 8)
 NO_INVENTION_RULES = """\
 Hard rules:
 - NEVER invent experiences, companies, dates, numbers, tools, certifications or achievements.
@@ -15,7 +15,7 @@ Hard rules:
 
 
 # ---------------------------------------------------------------------------
-# A — Profilo (Gabriele)
+# A — Profile (Gabriele)
 # ---------------------------------------------------------------------------
 
 PROFILE_EXTRACT_SYSTEM = f"""\
@@ -45,7 +45,7 @@ EXTRA MATERIAL FROM THE CANDIDATE:
 
 
 # ---------------------------------------------------------------------------
-# C — Candidatura su misura (Gabriele)
+# C — Tailored application (Gabriele)
 # ---------------------------------------------------------------------------
 
 TAILOR_SYSTEM = f"""\
@@ -106,7 +106,7 @@ Be honest: missing Norwegian when the ad requires it is a gap."""
 
 
 # ---------------------------------------------------------------------------
-# D — Colloquio simulato (Matilde)
+# D — Mock interview (Matilde)
 # ---------------------------------------------------------------------------
 
 INTERVIEW_PLAN_SYSTEM = f"""\

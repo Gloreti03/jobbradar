@@ -363,6 +363,14 @@ class InterviewTurnResponse(Schema):
     done: bool  # true after the 6th answer -> call /feedback
 
 
+class InterviewTranscriptRequest(Schema):
+    """Body of POST /interview/{application_id}/transcript: the messages of a VOICE interview,
+    in order, as collected by the ElevenLabs SDK (agent -> "interviewer", user -> "candidate").
+    question_id is optional: when missing, the backend assigns it from the plan."""
+
+    turns: list[TranscriptTurn] = Field(min_length=1, max_length=300)
+
+
 class InterviewOut(Schema):
     """Full interview (fixtures/interview.json)."""
 

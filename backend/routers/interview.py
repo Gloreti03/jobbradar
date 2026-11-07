@@ -6,6 +6,12 @@ Flow (text mode):
   POST /interview/{application_id}/feedback  -> final evaluation (saved, returned again on later calls)
   GET  /interview/{application_id}           -> latest interview (plan + transcript + feedback), extra
 
+Flow (voice mode, ElevenLabs):
+  POST /interview/{application_id}/start      (mode "voice") -> plan + first message for the agent
+  ... call in the browser ...
+  POST /interview/{application_id}/transcript -> whole conversation (question ids assigned here)
+  POST /interview/{application_id}/feedback   -> same evaluation as text mode
+
 Unlocked only for applications in status applied/interviewing/rejected/offer (with a snapshot).
 Proxy (BLUEPRINT sec. 9): if application_id is not in the DB but is the id of
 fixtures/application.json, that fake application (already applied) is used.
@@ -25,6 +31,7 @@ from schemas import (
     InterviewQuestion,
     InterviewStartRequest,
     InterviewStartResponse,
+    InterviewTranscriptRequest,
     InterviewTurnRequest,
     InterviewTurnResponse,
     Snapshot,
@@ -128,6 +135,56 @@ def interview_turn(application_id: int, body: InterviewTurnRequest, db: Session 
     row.transcript = transcript  # reassign: SQLAlchemy does not track in-place JSON changes
     db.commit()
     return {"interview_id": row.id, "message": message, "question_index": next_index, "done": done}
+
+
+MAX_TURN_CHARS = 4000
+
+
+def _assign_question_ids(turns: list[TranscriptTurn], plan: list[InterviewQuestion]) -> list[TranscriptTurn]:
+    """Voice transcripts come without question ids. The agent asks the plan in order, so:
+    an interviewer message with a question mark, after the candidate has answered, moves to the
+    next planned question; candidate turns belong to the current question.
+    A question_id sent by the frontend is kept (and moves the pointer there)."""
+    ids = [q.id for q in plan]
+    index, answered = 0, False
+    out = []
+    for turn in turns:
+        content = turn.content.strip()[:MAX_TURN_CHARS]
+        if not content:
+            continue
+        if turn.question_id in ids:
+            index, answered = ids.index(turn.question_id), turn.role == "candidate"
+        elif turn.role == "interviewer" and answered and "?" in content and index < len(ids) - 1:
+            index, answered = index + 1, False
+        elif turn.role == "candidate":
+            answered = True
+        out.append(TranscriptTurn(role=turn.role, content=content, question_id=ids[index]))
+    return out
+
+
+@router.post("/{application_id}/transcript", response_model=InterviewOut)
+def save_voice_transcript(application_id: int, body: InterviewTranscriptRequest, db: Session = Depends(get_db)):
+    """VOICE mode: after the ElevenLabs call, the frontend sends the whole conversation here,
+    then calls /feedback as in text mode. Flow: /start (mode "voice": plan + first message for the
+    agent) -> call -> /transcript -> /feedback. Replaces the transcript and clears an old feedback."""
+    _load_application(db, application_id)  # 404 / 409 checks
+    row = _latest_interview(db, application_id)
+    plan = [InterviewQuestion.model_validate(q) for q in row.plan]
+    turns = _assign_question_ids(body.turns, plan)
+    if not any(t.role == "candidate" for t in turns):
+        raise HTTPException(status_code=422, detail="The transcript has no answers from the candidate")
+    row.mode = "voice"
+    row.transcript = [t.model_dump() for t in turns]
+    row.feedback = None
+    db.commit()
+    return {
+        "id": row.id,
+        "application_id": row.application_id,
+        "mode": row.mode,
+        "plan": row.plan,
+        "transcript": row.transcript,
+        "feedback": None,
+    }
 
 
 @router.post("/{application_id}/feedback", response_model=InterviewFeedback)

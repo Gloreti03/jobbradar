@@ -1,4 +1,4 @@
-# RADAR — Blueprint di progetto (hackathon Oslo, 7–8 nov 2026)
+# JobbRadar — Blueprint di progetto (hackathon Oslo, 7–8 nov 2026)
 
 > Questo file va nella root di entrambi i repo. Ognuno dei 4 lo dà a Claude Code come contesto.
 > Descrive **cosa costruiamo, come è organizzato e chi fa cosa**. Il codice lo scrivono Claude Code e Lovable (frontend) seguendo questo file.

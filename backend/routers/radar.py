@@ -95,7 +95,13 @@ async def run_radar(body: RadarRequest):
                 index_elements=["profile_id", "job_id"], set_=values,
             ))
 
-    ordered = sorted(job_models, key=lambda job: (job.posted_at is None, -matches[job.id].score, job.id))
+    # Rank by fit first; publication dates only break ties between equal scores.
+    ordered = sorted(job_models, key=lambda job: (
+        -matches[job.id].score,
+        job.posted_at is None,
+        -as_utc(job.posted_at).timestamp() if job.posted_at else 0,
+        job.id,
+    ))
     results = [RadarResult(job=job, match=matches[job.id]) for job in ordered[:15]]
     funnel.ranked = len(results)
     return RadarResponse(

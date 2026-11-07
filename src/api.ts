@@ -20,8 +20,8 @@ import jobsFixture from "./mocks/jobs.json";
 import radarFixture from "./mocks/radar_response.json";
 import applicationFixture from "./mocks/application.json";
 
-export const USE_MOCKS = String(import.meta.env.VITE_USE_MOCKS ?? "true") !== "false";
-export const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8000";
+export const USE_MOCKS = String(import.meta.env["VITE_USE_MOCKS"] ?? "true") !== "false";
+export const API_URL = (import.meta.env["VITE_API_URL"] as string | undefined) ?? "http://localhost:8000";
 
 export type ApiErrorKind = "not_found" | "network" | "server" | "client";
 export class ApiError extends Error {
@@ -36,10 +36,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
     const isForm = init?.body instanceof FormData;
-    res = await fetch(`${API_URL}${path}`, {
-      ...init,
-      headers: isForm ? init?.headers : { "Content-Type": "application/json", ...init?.headers },
-    });
+    const headers = new Headers(init?.headers);
+    if (!isForm) headers.set("Content-Type", "application/json");
+    res = await fetch(`${API_URL}${path}`, { ...init, headers });
   } catch {
     throw new ApiError("network", `Can't reach the RADAR server at ${API_URL}. Is it running?`);
   }
@@ -183,7 +182,7 @@ const mock = {
     let results = pick(used);
     // Mirror backend: widen the window when too few dated results.
     while (results.filter((r) => r.job.posted_at).length < 3 && used < 30) {
-      used = windows[windows.indexOf(used) + 1];
+      used = windows[windows.indexOf(used) + 1] ?? 30;
       results = pick(used);
     }
     const res: RadarResponse = {
@@ -253,7 +252,7 @@ const mock = {
     const s = load();
     const i = s.applications.findIndex((a) => a.id === id);
     if (i < 0) throw new ApiError("not_found", "Application not found", 404);
-    const a = s.applications[i];
+    const a = s.applications[i]!;
     if (patch.cv) a.cv = patch.cv;
     if (patch.cover_letter != null) a.cover_letter = patch.cover_letter;
     if (patch.status) a.status = patch.status;

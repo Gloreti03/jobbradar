@@ -33,6 +33,10 @@ log = logging.getLogger("interview")
 PLAN_MODEL = "fast"
 TURN_MODEL = "fast"
 FEEDBACK_MODEL = "fast"
+# "none" = no hidden reasoning: much faster (feedback ~30 s -> ~10 s). Set to None to turn it off.
+PLAN_REASONING = "none"
+TURN_REASONING = "none"
+FEEDBACK_REASONING = "none"
 
 N_QUESTIONS = 6
 EXPECTED_KINDS = ["intro", "behavioral", "behavioral", "technical", "technical", "motivation"]
@@ -98,6 +102,15 @@ def _cv_json(snapshot: Snapshot) -> str:
     return json.dumps(snapshot.cv.model_dump(mode="json"), ensure_ascii=False)
 
 
+def _requirement_map(notes: ApplicationNotes) -> str:
+    """requirement_map of the application (requirement -> status + proof) as short lines."""
+    lines = []
+    for r in getattr(notes, "requirement_map", []) or []:
+        proof = "; ".join(f'"{e}"' for e in r.evidence[:2]) or "no proof"
+        lines.append(f"- [{r.status}, {r.importance}] {r.requirement} — proof: {proof}")
+    return "\n".join(lines) or "(not available)"
+
+
 # --- plan ---
 
 
@@ -110,6 +123,7 @@ def make_plan(snapshot: Snapshot, notes: ApplicationNotes, language: str) -> tup
         description=_description(snapshot),
         cv_json=_cv_json(snapshot),
         cover_letter=snapshot.cover_letter,
+        requirement_map=_requirement_map(notes),
         missing="\n".join(f"- {m}" for m in notes.missing_requirements) or "(none)",
     )
     plan = complete_json(
@@ -118,6 +132,7 @@ def make_plan(snapshot: Snapshot, notes: ApplicationNotes, language: str) -> tup
         user=user,
         schema=_Plan,
         temperature=0.5,
+        reasoning_effort=PLAN_REASONING,
     )
     first_message = f"{plan.greeting.strip()} {plan.questions[0].question.strip()}"
     return plan.questions, first_message
@@ -140,6 +155,7 @@ def next_message(question: InterviewQuestion, answer: str, next_question: Interv
             temperature=0.4,
             max_tokens=400,
             retries=1,
+            reasoning_effort=TURN_REASONING,
         )
         if out.message.strip():
             return out.message.strip()
@@ -180,6 +196,7 @@ def make_feedback(
         schema=_Feedback,  # rejects "n/a" better answers -> llm.py retries with the error
         temperature=0.3,
         max_tokens=6000,
+        reasoning_effort=FEEDBACK_REASONING,
     )
     feedback = InterviewFeedback.model_validate(feedback.model_dump())
     # One entry per planned question, in plan order, with the exact question text.

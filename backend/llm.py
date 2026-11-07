@@ -11,12 +11,16 @@ se fallisce, si riprova mandando l'errore al modello.
 """
 
 import json
+import logging
+import time
 from typing import Literal, TypeVar
 
 from openai import AsyncOpenAI, OpenAI
 from pydantic import BaseModel, ValidationError
 
 from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, MODEL_FAST, MODEL_SMART
+
+log = logging.getLogger("llm")
 
 T = TypeVar("T", bound=BaseModel)
 ModelKind = Literal["smart", "fast"]
@@ -66,6 +70,17 @@ def _parse(raw: str | None, schema: type[T]) -> T:
     return schema.model_validate_json(raw)
 
 
+def _log_call(kind: ModelKind, schema: type[BaseModel], attempt: int, t0: float, resp) -> None:
+    usage = getattr(resp, "usage", None)
+    if resp.choices and resp.choices[0].finish_reason == "length":
+        log.warning("%s [%s]: output truncated by max_tokens, raise it for this call", schema.__name__, _model(kind))
+    log.info(
+        "%s [%s] attempt %d: %.1fs, tokens in=%s out=%s",
+        schema.__name__, _model(kind), attempt + 1, time.monotonic() - t0,
+        getattr(usage, "prompt_tokens", "?"), getattr(usage, "completion_tokens", "?"),
+    )
+
+
 def _retry_messages(messages: list[dict], raw: str | None, err: Exception) -> list[dict]:
     return messages + [
         {"role": "assistant", "content": raw or ""},
@@ -89,7 +104,8 @@ def complete_json(
 ) -> T:
     messages = _messages(system, user, schema)
     last_err: Exception | None = None
-    for _ in range(retries + 1):
+    for attempt in range(retries + 1):
+        t0 = time.monotonic()
         resp = _client().chat.completions.create(
             model=_model(kind),
             messages=messages,
@@ -98,10 +114,12 @@ def complete_json(
             max_tokens=max_tokens,
         )
         raw = resp.choices[0].message.content
+        _log_call(kind, schema, attempt, t0, resp)
         try:
             return _parse(raw, schema)
         except (ValidationError, ValueError) as err:
             last_err = err
+            log.warning("%s: invalid JSON (attempt %d), retrying: %s", schema.__name__, attempt + 1, str(err)[:300])
             messages = _retry_messages(messages, raw, err)
     raise LLMError(f"Invalid JSON from model for {schema.__name__}: {last_err}")
 
@@ -118,7 +136,8 @@ async def acomplete_json(
 ) -> T:
     messages = _messages(system, user, schema)
     last_err: Exception | None = None
-    for _ in range(retries + 1):
+    for attempt in range(retries + 1):
+        t0 = time.monotonic()
         resp = await _aclient().chat.completions.create(
             model=_model(kind),
             messages=messages,
@@ -127,9 +146,11 @@ async def acomplete_json(
             max_tokens=max_tokens,
         )
         raw = resp.choices[0].message.content
+        _log_call(kind, schema, attempt, t0, resp)
         try:
             return _parse(raw, schema)
         except (ValidationError, ValueError) as err:
             last_err = err
+            log.warning("%s: invalid JSON (attempt %d), retrying: %s", schema.__name__, attempt + 1, str(err)[:300])
             messages = _retry_messages(messages, raw, err)
     raise LLMError(f"Invalid JSON from model for {schema.__name__}: {last_err}")

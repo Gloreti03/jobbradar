@@ -12,6 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RadarRouteImport } from './routes/radar'
+import { Route as ApplicationsIndexRouteImport } from './routes/applications.index'
+import { Route as InterviewApplicationIdRouteImport } from './routes/interview.$applicationId'
+import { Route as JobsIdRouteImport } from './routes/jobs.$id'
+import { Route as PrintCoverIdRouteImport } from './routes/print.cover.$id'
+import { Route as PrintCvIdRouteImport } from './routes/print.cv.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +33,105 @@ const RadarRoute = RadarRouteImport.update({
   path: '/radar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApplicationsIndexRoute = ApplicationsIndexRouteImport.update({
+  id: '/applications/',
+  path: '/applications/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InterviewApplicationIdRoute = InterviewApplicationIdRouteImport.update({
+  id: '/interview/$applicationId',
+  path: '/interview/$applicationId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JobsIdRoute = JobsIdRouteImport.update({
+  id: '/jobs/$id',
+  path: '/jobs/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrintCoverIdRoute = PrintCoverIdRouteImport.update({
+  id: '/print/cover/$id',
+  path: '/print/cover/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrintCvIdRoute = PrintCvIdRouteImport.update({
+  id: '/print/cv/$id',
+  path: '/print/cv/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
   '/radar': typeof RadarRoute
+  '/interview/$applicationId': typeof InterviewApplicationIdRoute
+  '/jobs/$id': typeof JobsIdRoute
+  '/applications/': typeof ApplicationsIndexRoute
+  '/print/cover/$id': typeof PrintCoverIdRoute
+  '/print/cv/$id': typeof PrintCvIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
   '/radar': typeof RadarRoute
+  '/interview/$applicationId': typeof InterviewApplicationIdRoute
+  '/jobs/$id': typeof JobsIdRoute
+  '/applications': typeof ApplicationsIndexRoute
+  '/print/cover/$id': typeof PrintCoverIdRoute
+  '/print/cv/$id': typeof PrintCvIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
   '/radar': typeof RadarRoute
+  '/interview/$applicationId': typeof InterviewApplicationIdRoute
+  '/jobs/$id': typeof JobsIdRoute
+  '/applications/': typeof ApplicationsIndexRoute
+  '/print/cover/$id': typeof PrintCoverIdRoute
+  '/print/cv/$id': typeof PrintCvIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/profile' | '/radar'
+  fullPaths:
+    | '/'
+    | '/profile'
+    | '/radar'
+    | '/interview/$applicationId'
+    | '/jobs/$id'
+    | '/applications/'
+    | '/print/cover/$id'
+    | '/print/cv/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/profile' | '/radar'
-  id: '__root__' | '/' | '/profile' | '/radar'
+  to:
+    | '/'
+    | '/profile'
+    | '/radar'
+    | '/interview/$applicationId'
+    | '/jobs/$id'
+    | '/applications'
+    | '/print/cover/$id'
+    | '/print/cv/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/profile'
+    | '/radar'
+    | '/interview/$applicationId'
+    | '/jobs/$id'
+    | '/applications/'
+    | '/print/cover/$id'
+    | '/print/cv/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProfileRoute: typeof ProfileRoute
   RadarRoute: typeof RadarRoute
+  InterviewApplicationIdRoute: typeof InterviewApplicationIdRoute
+  JobsIdRoute: typeof JobsIdRoute
+  ApplicationsIndexRoute: typeof ApplicationsIndexRoute
+  PrintCoverIdRoute: typeof PrintCoverIdRoute
+  PrintCvIdRoute: typeof PrintCvIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +157,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RadarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/applications/': {
+      id: '/applications/'
+      path: '/applications'
+      fullPath: '/applications/'
+      preLoaderRoute: typeof ApplicationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/interview/$applicationId': {
+      id: '/interview/$applicationId'
+      path: '/interview/$applicationId'
+      fullPath: '/interview/$applicationId'
+      preLoaderRoute: typeof InterviewApplicationIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jobs/$id': {
+      id: '/jobs/$id'
+      path: '/jobs/$id'
+      fullPath: '/jobs/$id'
+      preLoaderRoute: typeof JobsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/print/cover/$id': {
+      id: '/print/cover/$id'
+      path: '/print/cover/$id'
+      fullPath: '/print/cover/$id'
+      preLoaderRoute: typeof PrintCoverIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/print/cv/$id': {
+      id: '/print/cv/$id'
+      path: '/print/cv/$id'
+      fullPath: '/print/cv/$id'
+      preLoaderRoute: typeof PrintCvIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +199,11 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProfileRoute: ProfileRoute,
   RadarRoute: RadarRoute,
+  InterviewApplicationIdRoute: InterviewApplicationIdRoute,
+  JobsIdRoute: JobsIdRoute,
+  ApplicationsIndexRoute: ApplicationsIndexRoute,
+  PrintCoverIdRoute: PrintCoverIdRoute,
+  PrintCvIdRoute: PrintCvIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

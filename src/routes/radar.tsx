@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { AlertCircle, ArrowRight, CircleHelp, Info, Lock, MapPin, Minus, Plus, Radar as RadarIcon } from "lucide-react";
+import { ArrowRight, CircleHelp, Info, Lock, MapPin, Minus, Plus, Radar as RadarIcon } from "lucide-react";
 import { api, isNotFound } from "@/api";
 import type { RadarRequest, RadarResponse, RadarResult } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useProfileQuery } from "@/components/radar/AppShell";
-import { EmptyState, ErrorState, LanguageBadges, LoadingState, PageHeader, PostedDate, RadarGlyph, ScoreRing, VerdictBadge, formatDate } from "@/components/radar/shared";
+import { EmptyState, ErrorState, LanguageBadges, LoadingState, PageHeader, PostedDate, RadarGlyph, ScoreRing, VerdictBadge, formatDate, Points } from "@/components/radar/shared";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/radar")({
@@ -169,20 +169,3 @@ function JobCard({ r }: { r: RadarResult }) {
   );
 }
 
-export function Points({ icon, title, items, tone }: { icon: React.ReactNode; title: string; items: string[]; tone: string }) {
-  return (
-    <div>
-      <div className={cn("mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide", tone)}>
-        {icon}
-        {title}
-      </div>
-      {items.length ? (
-        <ul className="space-y-1 text-foreground/80">
-          {items.map((x) => <li key={x}>{x}</li>)}
-        </ul>
-      ) : (
-        <p className="flex items-center gap-1 text-muted-foreground"><AlertCircle className="size-3" /> None noted</p>
-      )}
-    </div>
-  );
-}

@@ -1,4 +1,4 @@
-import { AlertTriangle, Loader2, RefreshCw, WifiOff, ServerCrash, CalendarX } from "lucide-react";
+import { AlertCircle, AlertTriangle, Loader2, RefreshCw, WifiOff, ServerCrash, CalendarX } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/api";
@@ -169,6 +169,24 @@ export function RadarGlyph({ active, className }: { active?: boolean; className?
       />
       {active && <div className="absolute inset-[30%] rounded-full bg-primary/30 animate-radar-ping" />}
       <div className="absolute left-1/2 top-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary" />
+    </div>
+  );
+}
+
+export function Points({ icon, title, items, tone }: { icon: ReactNode; title: string; items: string[]; tone: string }) {
+  return (
+    <div>
+      <div className={cn("mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide", tone)}>
+        {icon}
+        {title}
+      </div>
+      {items.length ? (
+        <ul className="space-y-1 text-foreground/80">
+          {items.map((x) => <li key={x}>{x}</li>)}
+        </ul>
+      ) : (
+        <p className="flex items-center gap-1 text-muted-foreground"><AlertCircle className="size-3" /> None noted</p>
+      )}
     </div>
   );
 }

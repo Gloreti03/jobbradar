@@ -90,8 +90,8 @@ type MockState = {
 const KEY = "radar_demo_state_v1";
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
 const seed = (withProfile: boolean): MockState => ({
-  profile: withProfile ? clone(profileFixture as ProfileOut) : null,
-  applications: [clone(applicationFixture as ApplicationOut)],
+  profile: withProfile ? clone(profileFixture as unknown as ProfileOut) : null,
+  applications: [clone(applicationFixture as unknown as ApplicationOut)],
   lastRadar: null,
 });
 function load(): MockState {
@@ -109,13 +109,13 @@ function save(s: MockState) {
 }
 const delay = (ms = 350) => new Promise((r) => setTimeout(r, ms));
 const now = () => new Date().toISOString();
-const jobs = jobsFixture as JobOut[];
+const jobs = jobsFixture as unknown as JobOut[];
 
 /** Demo-only controls for testing first-use vs populated profile. */
 export const demo = {
   setProfileState(state: "empty" | "populated") {
     const s = load();
-    s.profile = state === "populated" ? clone(profileFixture as ProfileOut) : null;
+    s.profile = state === "populated" ? clone(profileFixture as unknown as ProfileOut) : null;
     save(s);
   },
   reset() {
@@ -149,7 +149,7 @@ const mock = {
     await delay(1400);
     const s = load();
     // Demo: the uploaded CV is "parsed" into the fixture profile.
-    s.profile = { ...clone(profileFixture as ProfileOut), extra_text: extraText, updated_at: now() };
+    s.profile = { ...clone(profileFixture as unknown as ProfileOut), extra_text: extraText, updated_at: now() };
     save(s);
     return s.profile;
   },
@@ -170,7 +170,7 @@ const mock = {
     await delay(1800);
     const s = load();
     if (!s.profile) throw new ApiError("client", "Create your profile before scanning", 400);
-    const base = radarFixture as RadarResponse;
+    const base = radarFixture as unknown as RadarResponse;
     const ref = new Date(base.generated_at).getTime();
     const windows = [3, 7, 14, 30];
     const pick = (days: number) =>
@@ -203,7 +203,7 @@ const mock = {
     const s = load();
     const job = jobs.find((j) => j.id === id);
     if (!job) throw new ApiError("not_found", "Job not found", 404);
-    const match = (radarFixture as RadarResponse).results.find((r) => r.job.id === id)?.match ?? null;
+    const match = (radarFixture as unknown as RadarResponse).results.find((r) => r.job.id === id)?.match ?? null;
     const app = s.applications.find((a) => a.job_id === id);
     return { job: clone(job), match: clone(match), application: app ? { id: app.id, status: app.status } : null };
   },
@@ -226,7 +226,7 @@ const mock = {
     const job = jobs.find((j) => j.id === job_id);
     if (!job) throw new ApiError("not_found", "Job not found", 404);
     const p = s.profile.profile;
-    const match = (radarFixture as RadarResponse).results.find((r) => r.job.id === job_id)?.match;
+    const match = (radarFixture as unknown as RadarResponse).results.find((r) => r.job.id === job_id)?.match;
     const app: ApplicationOut = {
       id: Math.max(0, ...s.applications.map((a) => a.id)) + 1,
       job_id,

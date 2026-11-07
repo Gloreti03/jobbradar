@@ -16,6 +16,7 @@ from sqlalchemy import delete, select, text
 from config import BACKEND_DIR
 from db import SessionLocal, init_db
 from models import JobRow, MatchRow
+from radar.filters import language_flags
 from radar.providers.base import NormalizedJob, ScanConfig, as_utc, canonical_url, job_out
 from radar.providers.nav import NavProvider
 from radar.providers.teamtailor import TeamtailorProvider
@@ -163,6 +164,12 @@ def dump_seed(path: Path = SEED_PATH) -> int:
 
 def load_seed(path: Path = SEED_PATH) -> int:
     jobs = TypeAdapter(list[JobOut]).validate_json(path.read_bytes())
-    normalized = [NormalizedJob.model_validate(job.model_dump()) for job in jobs]
+    normalized = []
+    for job in jobs:
+        item = NormalizedJob.model_validate(job.model_dump())
+        if job.description:
+            language, required = language_flags(job.title, job.description)
+            item = item.model_copy(update={"language": language or item.language, "norwegian_required": required})
+        normalized.append(item)
     init_db()
     return save_jobs(normalized)

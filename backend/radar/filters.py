@@ -9,6 +9,38 @@ from schemas import Preferences, Profile
 OSLO_AREA = ("oslo", "lysaker", "fornebu", "sandvika", "bærum", "asker", "lillestrøm", "lørenskog", "ski", "nordre follo")
 SENIORITY_WORDS = {"intern", "junior", "graduate", "nyutdannet", "trainee", "senior", "mid", "lead", "principal", "head", "director", "chief"}
 GENERIC_ROLE_WORDS = {"developer", "engineer", "utvikler", "ingeniør", "programmer", "of"}
+OPTIONAL_NORWEGIAN = re.compile(
+    r"\bnorwegian(?:[- \t]+(?:language|speaking|skills?|proficiency|fluency|knowledge)){0,3}[ \t]+"
+    r"(?:(?:is|are|would be|will be|considered|seen as|also|highly|strongly)[ \t]+){0,4}"
+    r"\(?(?:not[ \t]+(?:strictly[ \t]+)?(?:required|necessary|mandatory|essential|needed|a requirement)"
+    r"|optional|preferred|desirable|desired|nice[- ]to[- ]have"
+    r"|(?:an?[ \t]+)?(?:strong[ \t]+)?(?:plus|advantage|asset|bonus|benefit))\b\)?"
+    r"|\b(?:nice[- ]to[- ]have|preferred|desirable)\s*[:\-]?\s*"
+    r"(?:(?:fluency|proficiency|knowledge|skills?)\s+(?:in|of)\s+)?(?:fluent\s+)?norwegian\b"
+    r"|\bno\s+norwegian(?:\s+(?:language|skills?)){0,2}\s+(?:required|necessary|needed)\b"
+    r"|\b(?:do not|don't)\s+need\s+to\s+(?:speak|know|understand)\s+norwegian\b"
+    r"|\bnorsk(?:kunnskaper|ferdigheter)?[ \t]+(?:(?:er|vil være|også)[ \t]+){0,3}"
+    r"(?:ikke[ \t]+(?:et[ \t]+)?(?:absolutt[ \t]+)?(?:krav|påkrevd|nødvendig)"
+    r"|ønskelig|valgfritt|(?:en[ \t]+)?(?:fordel|bonus|pluss))\b"
+    r"|\btrenger\s+ikke\s+(?:å\s+)?(?:snakke|kunne|beherske)\s+norsk\b"
+    r"|\b(?:speak|speaking|fluent|fluency|proficiency|communicate)\b[^.;!?\n]{0,35}"
+    r"\b(?:norwegian[ \t]*(?:or|/)[ \t]*english|english[ \t]*(?:or|/)[ \t]*norwegian)\b"
+    r"|\b(?:snakke|snakker|beherske|behersker|kommunisere|kommuniserer|forstå|forstått|god|gode)\b[^.;!?\n]{0,35}"
+    r"\b(?:norsk[ \t]*(?:eller|/)[ \t]*engelsk|engelsk[ \t]*(?:eller|/)[ \t]*norsk)\b"
+)
+REQUIRED_NORWEGIAN = re.compile(
+    r"\b(?:fluent|fluency|proficien\w*|excellent|good|speak|spoken|written)\b[^.;!?\n]{0,45}\bnorwegian\b"
+    r"|\bnorwegian\b(?!\s+(?:work permit|citizenship|law))[^.;!?\n]{0,45}\b(?:required|mandatory|essential|must)\b"
+    r"|\bnorwegian(?:\s+language)?\s+(?:fluency|proficiency)\b"
+    r"|\bnorwegian[- ]speaking\b"
+    r"|\b(?:working|work)\s+language\s+(?:(?:is|will be)\s+)?norwegian\b"
+    r"|\bnorwegian\s+is\s+(?:our|the)\s+working\s+language\b"
+    r"|\b(?:må\s+(?:kunne|snakke|beherske|forstå)|snakke|snakker|beherske|behersker|flytende|god|gode|godt|kommunisere|kommuniserer|muntlige?|skriftlige?)\b[^.;!?\n]{0,55}\bnorsk\b"
+    r"|\bnorsk\b[^.;!?\n]{0,55}\b(?:muntlige?|skriftlige?|[abc][12])\b"
+    r"|\bnorsk(?:kunnskaper|ferdigheter)?\s+(?:(?:er|et|absolutt)\s+){0,3}(?:krav|påkrevd|nødvendig)\b"
+    r"|\b(?:må|skal)\b[^.;!?\n]{0,25}\b(?:bestå|bestått)\b[^.;!?\n]{0,20}\bnorskprøve(?:n)?\b"
+    r"|\barbeidsspråk(?:et)?\s+(?:er\s+)?norsk\b|\bnorsk\s+som\s+arbeidsspråk\b"
+)
 
 
 def normalize_terms(value: str) -> str:
@@ -29,17 +61,12 @@ def language_flags(title: str, description: str) -> tuple[str | None, bool | Non
     norwegian = sum(word in {"og", "som", "til", "søker", "er", "med", "arbeid", "arbeidsoppgaver", "kvalifikasjoner", "deg", "du", "vi"} for word in words)
     english = sum(word in {"the", "and", "with", "you", "we", "our", "are", "requirements", "experience", "work"} for word in words)
     language = "no" if norwegian > english else "en" if english else None
-    explicit_optional = re.search(r"norwegian\s+(?:is\s+)?not\s+(?:required|necessary)|no norwegian required", text)
-    required = re.search(
-        r"(?:fluent|fluency|proficien\w*|excellent|good|speak|spoken|written).{0,45}\bnorwegian\b"
-        r"|\bnorwegian\b.{0,45}(?:required|mandatory|essential|must)"
-        r"|(?:må|beherske|behersker|flytende|god|gode|godt|kommunisere|muntlig|skriftlig).{0,55}\bnorsk\b"
-        r"|\bnorsk\b.{0,55}(?:muntlig|skriftlig|krav)",
-        text,
-    )
-    if required and not explicit_optional:
+    # Remove optional language phrases before checking the remaining requirements.
+    # A separate mandatory clause still wins over an optional one.
+    requirement_text, optional_count = OPTIONAL_NORWEGIAN.subn(" ", text)
+    if REQUIRED_NORWEGIAN.search(requirement_text):
         return language, True
-    if explicit_optional or language == "en":
+    if optional_count or language == "en":
         return language, False
     return language, None
 
@@ -53,16 +80,35 @@ def title_terms(profile: Profile) -> tuple[list[str], list[str]]:
     return positive, negative
 
 
-def title_relevance(title: str, profile: Profile) -> int:
+def role_text(value: str, company: str | None = None) -> str:
+    text = normalize_terms(value)
+    # Employer names are not skills (e.g. the fashion retailer HIJA BI AS).
+    employer = re.sub(r"(?: (?:as|asa|ab|inc|ltd|limited))+$", "", normalize_terms(company or ""))
+    if len(employer.split()) > 1:
+        text = re.sub(r"(?<!\w)" + re.escape(employer) + r"(?!\w)", " ", text)
+    return " ".join(text.split())
+
+
+def title_relevance(title: str, profile: Profile, company: str | None = None) -> int:
     positive, _ = title_terms(profile)
-    text = normalize_terms(title)
+    text = role_text(title, company)
+    location_words = set(normalize_terms(" ".join(profile.preferences.cities or ["Oslo"])).split())
     score = 0
     for term in positive:
+        term_words = set(term.split()) - SENIORITY_WORDS - location_words
+        if not term_words:
+            continue
         if contains_term(text, term):
             score += 2
             continue
-        words = set(term.split()) - SENIORITY_WORDS - GENERIC_ROLE_WORDS
-        score += sum(contains_term(text, word) for word in words)
+        words = term_words - GENERIC_ROLE_WORDS
+        # A fragment such as BI from "BI analyst" or R from "R analyst"
+        # cannot select a job alone. Keep reordered technical titles such as
+        # "ML Software Engineer" by requiring the rest of "ML engineer" too.
+        if words and all(len(word) <= 2 for word in words):
+            score += int(all(contains_term(text, word) for word in term_words))
+        else:
+            score += sum(contains_term(text, word) for word in words if len(word) > 2)
     return score
 
 
@@ -106,8 +152,8 @@ def filter_jobs(jobs: list, profile: Profile, days: int, english_only: bool, now
         title = normalize_terms(job.title)
         if any(contains_term(title, term) for term in negative):
             continue
-        if positive and not title_relevance(job.title, profile):
-            description = normalize_terms(job.description or "")
+        if positive and not title_relevance(job.title, profile, job.company):
+            description = role_text(job.description or "", job.company)
             if not any(contains_term(description, term) for term in positive):
                 continue
         url = canonical_url(job.url)
@@ -120,7 +166,7 @@ def filter_jobs(jobs: list, profile: Profile, days: int, english_only: bool, now
         selected.append(job)
     return sorted(selected, key=lambda job: (
         job.posted_at is None,
-        -title_relevance(job.title, profile),
+        -title_relevance(job.title, profile, job.company),
         -as_utc(job.posted_at).timestamp() if job.posted_at else 0,
         job.id,
     ))

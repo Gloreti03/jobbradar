@@ -17,6 +17,7 @@ from db import Base, get_db
 from fixtures import load_fixture
 from main import app
 from models import ApplicationRow, JobRow, MatchRow
+from radar.filters import language_flags
 from radar.liveness import check_jobs
 from radar.ranking import RankedJob, RankingBatch, rank_jobs
 from schemas import JobOut, MatchOut, Profile, RadarResponse
@@ -107,6 +108,18 @@ class RadarApiTests(unittest.TestCase):
         self.assertEqual({row.job.id for row in result.results}, {cognite, dintero})
         passed_to_ai = self.rank.call_args.args[1]
         self.assertEqual({job.id for job in passed_to_ai}, {cognite, dintero})
+
+    def test_english_only_admits_optional_norwegian_and_keeps_mandatory_jobs_out(self):
+        self.add_profile()
+        optional_text = "We analyse data with Python and SQL. Good English communication skills; Norwegian is a plus."
+        mandatory_text = "We analyse data with Python and SQL. Norwegian language proficiency at C1 level."
+        language, required = language_flags("Data Analyst", optional_text)
+        optional = self.add_job("optional", description=optional_text, language=language, norwegian_required=required)
+        language, required = language_flags("Data Analyst", mandatory_text)
+        self.add_job("mandatory", description=mandatory_text, language=language, norwegian_required=required)
+        response = self.client.post("/radar", json={"english_only": True})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual({row["job"]["id"] for row in response.json()["results"]}, {optional})
 
     def test_cache_is_shared_with_job_detail_and_invalidated_by_profile_update(self):
         self.add_profile()

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>RADAR</title>
+  <style>
+    body { font: 14px/1.4 system-ui, sans-serif; width: 300px; margin: 0; padding: 14px; color: #111; background: #fff; }
+    h1 { font-size: 16px; margin: 0 0 8px; }
+    .job { background: #f4f4f6; border-radius: 8px; padding: 8px 10px; margin: 8px 0; min-height: 20px; }
+    .job b { display: block; }
+    .muted { color: #666; font-size: 12px; }
+    button { width: 100%; padding: 9px; border: 0; border-radius: 8px; background: #111; color: #fff; font-weight: 600; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: default; }
+    #status { margin-top: 8px; min-height: 18px; }
+    .error { color: #b00020; }
+    .ok { color: #0a7d32; }
+    details { margin-top: 10px; }
+    input { width: 100%; box-sizing: border-box; margin: 2px 0 6px; padding: 4px; }
+  </style>
+</head>
+<body>
+  <h1>RADAR</h1>
+  <div class="job" id="job"><span class="muted">Reading this page…</span></div>
+  <button id="save" disabled>Save to RADAR</button>
+  <div id="status"></div>
+  <details>
+    <summary class="muted">Settings</summary>
+    <label class="muted">Backend URL<input id="api" value="http://localhost:8000"></label>
+    <label class="muted">App URL<input id="app" value="http://localhost:5173"></label>
+  </details>
+  <script src="popup.js"></script>
+</body>
+</html>

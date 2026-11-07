@@ -218,10 +218,9 @@ def file_to_text(filename: str, data: bytes) -> tuple[str, str | None]:
     name = (filename or "").lower()
     if name.endswith(".pdf"):
         try:
-            text = redact_personal_ids(pdf_to_text(data))
-            if text.startswith(OCR_NOTE):
-                return text, f"{filename}: read with OCR (scan or unreadable fonts). Check courses and grades in your profile."
-            return text, None
+            # read with OCR or not, a file that gave text needs no warning (the yellow box is only
+            # for files that could not be read); the model still sees OCR_NOTE at the top of the text
+            return redact_personal_ids(pdf_to_text(data)), None
         except UnreadableDocument as err:
             log.warning("Skipping extra PDF %s: %s", filename, err)
             return "", f"{filename}: the text could not be read ({err}). Paste its content in 'More about you'."

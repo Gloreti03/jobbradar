@@ -23,12 +23,21 @@ describe("Profile answer integration", () => {
         steps.push("answers");
         expect(body.answers).toEqual([
           { question: profile.missing_info[0], answer: "EU citizen" },
-          { question: DISCOVERY_QUESTIONS[0], answer: "I enjoyed optimising the supply chain project" },
+          {
+            question: DISCOVERY_QUESTIONS[0],
+            answer: "I enjoyed optimising the supply chain project",
+          },
         ]);
         return updated;
       }),
     };
-    const result = await saveProfileWithAnswers(client, profile, "Personal notes and imported documents", { 0: " EU citizen " }, { 0: "I enjoyed optimising the supply chain project" });
+    const result = await saveProfileWithAnswers(
+      client,
+      profile,
+      "Personal notes and imported documents",
+      { 0: " EU citizen " },
+      { 0: "I enjoyed optimising the supply chain project" },
+    );
     expect(steps).toEqual(["save", "answers"]);
     expect(result).toBe(updated);
     expect(original.profile.headline).not.toBe(profile.headline);
@@ -44,8 +53,15 @@ describe("Profile answer integration", () => {
   it("does not submit answers when saving manual changes fails", async () => {
     const current = structuredClone(sample) as ProfileOut;
     const answers = { 0: "Full time" };
-    const client = { updateProfile: vi.fn(async () => { throw new Error("Offline"); }), answerProfile: vi.fn() };
-    await expect(saveProfileWithAnswers(client, current.profile, "Notes", answers, {})).rejects.toThrow("Offline");
+    const client = {
+      updateProfile: vi.fn(async () => {
+        throw new Error("Offline");
+      }),
+      answerProfile: vi.fn(),
+    };
+    await expect(
+      saveProfileWithAnswers(client, current.profile, "Notes", answers, {}),
+    ).rejects.toThrow("Offline");
     expect(client.answerProfile).not.toHaveBeenCalled();
     expect(answers[0]).toBe("Full time");
   });
@@ -53,8 +69,15 @@ describe("Profile answer integration", () => {
   it("surfaces a failed AI update without clearing the user's answers", async () => {
     const current = structuredClone(sample) as ProfileOut;
     const answers = { 0: "Full time" };
-    const client = { updateProfile: vi.fn(async () => current), answerProfile: vi.fn(async () => { throw new Error("Please retry"); }) };
-    await expect(saveProfileWithAnswers(client, current.profile, "Notes", answers, {})).rejects.toThrow("Please retry");
+    const client = {
+      updateProfile: vi.fn(async () => current),
+      answerProfile: vi.fn(async () => {
+        throw new Error("Please retry");
+      }),
+    };
+    await expect(
+      saveProfileWithAnswers(client, current.profile, "Notes", answers, {}),
+    ).rejects.toThrow("Please retry");
     expect(answers[0]).toBe("Full time");
   });
 });

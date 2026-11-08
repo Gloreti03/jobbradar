@@ -14,13 +14,34 @@ describe("Optional backend fields", () => {
   });
 
   it("shows required/preferred status and exact quotes supplied by the backend", () => {
-    render(<RequirementEvidence items={[
-      { requirement: "Python analysis", importance: "required", status: "met", evidence: ["Automated data cleaning with Python and pandas"] },
-      { requirement: "Production deployment", importance: "nice_to_have", status: "missing", evidence: [] },
-      { requirement: "Norwegian", importance: "required", status: "partial", evidence: ["Norwegian A2"] },
-    ]} />);
+    render(
+      <RequirementEvidence
+        items={[
+          {
+            requirement: "Python analysis",
+            importance: "required",
+            status: "met",
+            evidence: ["Automated data cleaning with Python and pandas"],
+          },
+          {
+            requirement: "Production deployment",
+            importance: "nice_to_have",
+            status: "missing",
+            evidence: [],
+          },
+          {
+            requirement: "Norwegian",
+            importance: "required",
+            status: "partial",
+            evidence: ["Norwegian A2"],
+          },
+        ]}
+      />,
+    );
     expect(screen.getByText("Python analysis")).toBeInTheDocument();
-    expect(screen.getByText("“Automated data cleaning with Python and pandas”")).toBeInTheDocument();
+    expect(
+      screen.getByText("“Automated data cleaning with Python and pandas”"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Not evidenced")).toBeInTheDocument();
     expect(screen.getByText("Partially supported")).toBeInTheDocument();
     expect(screen.getByText(/Nice to have/)).toBeInTheDocument();
@@ -42,7 +63,20 @@ describe("Optional backend fields", () => {
   });
 
   it("shows the backend counts, including zero, without estimating missing results", () => {
-    render(<ScanFunnel funnel={{ total: 398, recent: 200, location: 180, language: 80, keywords: 40, deduplicated: 35, live: 30, ranked: 0 }} />);
+    render(
+      <ScanFunnel
+        funnel={{
+          total: 398,
+          recent: 200,
+          location: 180,
+          language: 80,
+          keywords: 40,
+          deduplicated: 35,
+          live: 30,
+          ranked: 0,
+        }}
+      />,
+    );
     expect(screen.getByText("398")).toBeInTheDocument();
     expect(screen.getByText("0")).toBeInTheDocument();
     expect(screen.getByText("Still open")).toBeInTheDocument();
@@ -50,7 +84,21 @@ describe("Optional backend fields", () => {
   });
 
   it("hides a contradictory zero ranked count when results exist", () => {
-    render(<ScanFunnel resultCount={15} funnel={{ total: 398, recent: 200, location: 180, language: 80, keywords: 40, deduplicated: 35, live: 24, ranked: 0 }} />);
+    render(
+      <ScanFunnel
+        resultCount={15}
+        funnel={{
+          total: 398,
+          recent: 200,
+          location: 180,
+          language: 80,
+          keywords: 40,
+          deduplicated: 35,
+          live: 24,
+          ranked: 0,
+        }}
+      />,
+    );
     expect(screen.queryByText("Ranked")).not.toBeInTheDocument();
     expect(screen.queryByText("0")).not.toBeInTheDocument();
     expect(screen.getByText(/ranking count is temporarily unavailable/i)).toBeInTheDocument();

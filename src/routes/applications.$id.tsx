@@ -2,7 +2,19 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeft, Check, CheckCircle2, Download, ExternalLink, Loader2, MessagesSquare, PenLine, RefreshCw, Save } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Check,
+  CheckCircle2,
+  Download,
+  ExternalLink,
+  Loader2,
+  MessagesSquare,
+  PenLine,
+  RefreshCw,
+  Save,
+} from "lucide-react";
 import { api, qk } from "@/api";
 import type { ApplicationOut, TailoredCV } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -10,7 +22,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ErrorState, LoadingState, Panel, StatusBadge, formatDate } from "@/components/radar/shared";
+import { ErrorState, LoadingState, Panel, StatusBadge } from "@/components/radar/shared";
+import { formatDate } from "@/lib/format-date";
 import { CVDocument, CoverDocument } from "@/components/radar/Documents";
 import { RequirementEvidence } from "@/components/radar/RequirementEvidence";
 
@@ -20,7 +33,10 @@ export const Route = createFileRoute("/applications/$id")({
       { title: "Application — JobbRadar" },
       { name: "description", content: "Edit your tailored CV and cover letter, then apply." },
       { property: "og:title", content: "Application — JobbRadar" },
-      { property: "og:description", content: "Edit your tailored CV and cover letter, then apply." },
+      {
+        property: "og:description",
+        content: "Edit your tailored CV and cover letter, then apply.",
+      },
     ],
   }),
   component: EditorPage,
@@ -100,19 +116,25 @@ function Editor({ app }: { app: ApplicationOut }) {
       await downloadPdf(kind, documentCV, documentLetter, app.job.company);
       toast.success(kind === "cv" ? "One-page CV PDF ready" : "Cover letter PDF ready");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not download the PDF. Please try again.");
+      toast.error(
+        error instanceof Error ? error.message : "Could not download the PDF. Please try again.",
+      );
     } finally {
       setExporting(null);
     }
   };
 
-  const setC = <K extends keyof TailoredCV>(k: K, v: TailoredCV[K]) => setCv((x) => ({ ...x, [k]: v }));
+  const setC = <K extends keyof TailoredCV>(k: K, v: TailoredCV[K]) =>
+    setCv((x) => ({ ...x, [k]: v }));
   const applyUrl = app.job.apply_url ?? app.job.url;
   const isDraft = app.status === "draft";
 
   return (
     <div>
-      <Link to="/applications" className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+      <Link
+        to="/applications"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      >
         <ArrowLeft className="size-4" /> All applications
       </Link>
 
@@ -124,7 +146,11 @@ function Editor({ app }: { app: ApplicationOut }) {
             <StatusBadge status={app.status} />
           </div>
           <p className="mt-1 text-muted-foreground">
-            <Link to="/jobs/$id" params={{ id: String(app.job_id) }} className="hover:text-foreground hover:underline">
+            <Link
+              to="/jobs/$id"
+              params={{ id: String(app.job_id) }}
+              className="hover:text-foreground hover:underline"
+            >
               {app.job.company ?? "Unknown company"}
             </Link>
             {" · "}Created {formatDate(app.created_at)}
@@ -132,17 +158,48 @@ function Editor({ app }: { app: ApplicationOut }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {isDraft && <Button variant="outline" disabled={regenerateM.isPending || !!exporting || saveM.isPending || appliedM.isPending} onClick={() => regenerateM.mutate()} title="Creates a separate draft with your current profile; keeps this draft">
-            {regenerateM.isPending ? <Loader2 className="animate-spin" /> : <RefreshCw />} {regenerateM.isPending ? "Generating a new draft…" : "Generate new draft"}
-          </Button>}
-          <Button variant="outline" disabled={!!exporting || regenerateM.isPending || saveM.isPending || appliedM.isPending} onClick={() => exportPdf("cv")}>
-            {exporting === "cv" ? <Loader2 className="animate-spin" /> : <Download />} {exporting === "cv" ? "Preparing PDF…" : "Download CV PDF"}
+          {isDraft && (
+            <Button
+              variant="outline"
+              disabled={
+                regenerateM.isPending || !!exporting || saveM.isPending || appliedM.isPending
+              }
+              onClick={() => regenerateM.mutate()}
+              title="Creates a separate draft with your current profile; keeps this draft"
+            >
+              {regenerateM.isPending ? <Loader2 className="animate-spin" /> : <RefreshCw />}{" "}
+              {regenerateM.isPending ? "Generating a new draft…" : "Generate new draft"}
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            disabled={!!exporting || regenerateM.isPending || saveM.isPending || appliedM.isPending}
+            onClick={() => exportPdf("cv")}
+          >
+            {exporting === "cv" ? <Loader2 className="animate-spin" /> : <Download />}{" "}
+            {exporting === "cv" ? "Preparing PDF…" : "Download CV PDF"}
           </Button>
-          <Button variant="outline" disabled={!!exporting || regenerateM.isPending || saveM.isPending || appliedM.isPending} onClick={() => exportPdf("cover")}>
-            {exporting === "cover" ? <Loader2 className="animate-spin" /> : <Download />} {exporting === "cover" ? "Preparing PDF…" : "Download letter PDF"}
+          <Button
+            variant="outline"
+            disabled={!!exporting || regenerateM.isPending || saveM.isPending || appliedM.isPending}
+            onClick={() => exportPdf("cover")}
+          >
+            {exporting === "cover" ? <Loader2 className="animate-spin" /> : <Download />}{" "}
+            {exporting === "cover" ? "Preparing PDF…" : "Download letter PDF"}
           </Button>
-          <Button variant="secondary" disabled={!dirty || saveM.isPending || regenerateM.isPending || appliedM.isPending || !!exporting} onClick={() => saveM.mutate()}>
-            {saveM.isPending ? <Loader2 className="animate-spin" /> : dirty ? <Save /> : <Check />} {dirty ? "Save" : "Saved"}
+          <Button
+            variant="secondary"
+            disabled={
+              !dirty ||
+              saveM.isPending ||
+              regenerateM.isPending ||
+              appliedM.isPending ||
+              !!exporting
+            }
+            onClick={() => saveM.mutate()}
+          >
+            {saveM.isPending ? <Loader2 className="animate-spin" /> : dirty ? <Save /> : <Check />}{" "}
+            {dirty ? "Save" : "Saved"}
           </Button>
         </div>
       </div>
@@ -154,25 +211,40 @@ function Editor({ app }: { app: ApplicationOut }) {
             <div className="mr-auto">
               <div className="font-semibold">Ready to apply?</div>
               <p className="text-sm text-muted-foreground">
-                1. Open the company site and submit there. 2. Come back and confirm with "I applied" — this saves a snapshot of what you sent.
+                1. Open the company site and submit there. 2. Come back and confirm with "I applied"
+                — this saves a snapshot of what you sent.
               </p>
             </div>
             <Button asChild variant="outline" className="bg-card">
-              <a href={applyUrl} target="_blank" rel="noreferrer"><ExternalLink /> Apply on site</a>
+              <a href={applyUrl} target="_blank" rel="noreferrer">
+                <ExternalLink /> Apply on site
+              </a>
             </Button>
-            <Button disabled={appliedM.isPending || regenerateM.isPending || saveM.isPending || !!exporting} onClick={() => appliedM.mutate()}>
-              {appliedM.isPending ? <Loader2 className="animate-spin" /> : <CheckCircle2 />} I applied
+            <Button
+              disabled={
+                appliedM.isPending || regenerateM.isPending || saveM.isPending || !!exporting
+              }
+              onClick={() => appliedM.mutate()}
+            >
+              {appliedM.isPending ? <Loader2 className="animate-spin" /> : <CheckCircle2 />} I
+              applied
             </Button>
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-4">
             <CheckCircle2 className="size-6 text-primary" />
             <div className="mr-auto">
-              <div className="font-semibold">Application submitted{app.applied_at && ` on ${formatDate(app.applied_at)}`}</div>
-              <p className="text-sm text-muted-foreground">Prepare for the conversation with a practice interview based on what you sent.</p>
+              <div className="font-semibold">
+                Application submitted{app.applied_at && ` on ${formatDate(app.applied_at)}`}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Prepare for the conversation with a practice interview based on what you sent.
+              </p>
             </div>
             <Button asChild>
-              <Link to="/interview/$applicationId" params={{ applicationId: String(app.id) }}><MessagesSquare /> Practice interview</Link>
+              <Link to="/interview/$applicationId" params={{ applicationId: String(app.id) }}>
+                <MessagesSquare /> Practice interview
+              </Link>
             </Button>
           </div>
         )}
@@ -190,35 +262,83 @@ function Editor({ app }: { app: ApplicationOut }) {
           <TabsContent value="cv" className="mt-4 space-y-6">
             <Panel title="Header" icon={<PenLine className="size-4" />}>
               <div className="grid gap-4 md:grid-cols-2">
-                <div><Label>Name</Label><Input className="mt-1.5" value={cv.name} onChange={(e) => setC("name", e.target.value)} /></div>
-                <div><Label>Headline</Label><Input className="mt-1.5" value={cv.headline} onChange={(e) => setC("headline", e.target.value)} /></div>
+                <div>
+                  <Label>Name</Label>
+                  <Input
+                    className="mt-1.5"
+                    value={cv.name}
+                    onChange={(e) => setC("name", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>Headline</Label>
+                  <Input
+                    className="mt-1.5"
+                    value={cv.headline}
+                    onChange={(e) => setC("headline", e.target.value)}
+                  />
+                </div>
               </div>
-              <div className="mt-4"><Label>Summary</Label><Textarea className="mt-1.5" rows={4} value={cv.summary} onChange={(e) => setC("summary", e.target.value)} /></div>
+              <div className="mt-4">
+                <Label>Summary</Label>
+                <Textarea
+                  className="mt-1.5"
+                  rows={4}
+                  value={cv.summary}
+                  onChange={(e) => setC("summary", e.target.value)}
+                />
+              </div>
               <div className="mt-4">
                 <Label>Skills (comma separated)</Label>
-                <Input className="mt-1.5" value={cv.skills.join(", ")} onChange={(e) => setC("skills", e.target.value.split(",").map((s) => s.trimStart()))} />
+                <Input
+                  className="mt-1.5"
+                  value={cv.skills.join(", ")}
+                  onChange={(e) =>
+                    setC(
+                      "skills",
+                      e.target.value.split(",").map((s) => s.trimStart()),
+                    )
+                  }
+                />
               </div>
             </Panel>
             <Panel title="Experience">
               <div className="space-y-5">
                 {cv.experiences.map((x, i) => (
                   <div key={i}>
-                    <div className="mb-1.5 text-sm font-semibold">{x.role} · <span className="font-normal text-muted-foreground">{x.company}</span></div>
+                    <div className="mb-1.5 text-sm font-semibold">
+                      {x.role} ·{" "}
+                      <span className="font-normal text-muted-foreground">{x.company}</span>
+                    </div>
                     <Textarea
                       rows={Math.max(3, x.bullets.length + 1)}
                       value={x.bullets.join("\n")}
-                      onChange={(e) => setC("experiences", cv.experiences.map((y, j) => (j === i ? { ...y, bullets: e.target.value.split("\n") } : y)))}
+                      onChange={(e) =>
+                        setC(
+                          "experiences",
+                          cv.experiences.map((y, j) =>
+                            j === i ? { ...y, bullets: e.target.value.split("\n") } : y,
+                          ),
+                        )
+                      }
                     />
                   </div>
                 ))}
-                <p className="text-xs text-muted-foreground">One bullet per line. Only include things you actually did.</p>
+                <p className="text-xs text-muted-foreground">
+                  One bullet per line. Only include things you actually did.
+                </p>
               </div>
             </Panel>
           </TabsContent>
 
           <TabsContent value="cover" className="mt-4">
             <Panel>
-              <Textarea rows={22} className="font-[inherit] leading-relaxed" value={letter} onChange={(e) => setLetter(e.target.value)} />
+              <Textarea
+                rows={22}
+                className="font-[inherit] leading-relaxed"
+                value={letter}
+                onChange={(e) => setLetter(e.target.value)}
+              />
             </Panel>
           </TabsContent>
 
@@ -227,26 +347,54 @@ function Editor({ app }: { app: ApplicationOut }) {
           </TabsContent>
 
           <TabsContent value="preview" className="mt-4 space-y-6">
-            <p className="text-sm text-muted-foreground">Content preview. The downloaded CV uses a compact, single-page A4 layout; all the content below is preserved.</p>
-            <div className="rounded-xl border bg-card p-10 shadow-card"><CVDocument cv={cv} /></div>
-            <div className="rounded-xl border bg-card p-10 shadow-card"><CoverDocument cv={cv} letter={letter} /></div>
+            <p className="text-sm text-muted-foreground">
+              Content preview. The downloaded CV uses a compact, single-page A4 layout; all the
+              content below is preserved.
+            </p>
+            <div className="rounded-xl border bg-card p-10 shadow-card">
+              <CVDocument cv={cv} />
+            </div>
+            <div className="rounded-xl border bg-card p-10 shadow-card">
+              <CoverDocument cv={cv} letter={letter} />
+            </div>
           </TabsContent>
         </Tabs>
 
         <aside className="space-y-6">
           {app.notes.missing_requirements.length > 0 && (
-            <Panel title="Not claimed in your CV" icon={<AlertTriangle className="size-4 text-warning-foreground" />} className="border-warning/40">
-              <ul className="space-y-1.5 text-sm">{app.notes.missing_requirements.map((x) => <li key={x}>{x}</li>)}</ul>
-              <p className="mt-3 text-xs text-muted-foreground">Requirements you don't meet yet. Be ready to address them honestly.</p>
+            <Panel
+              title="Not claimed in your CV"
+              icon={<AlertTriangle className="size-4 text-warning-foreground" />}
+              className="border-warning/40"
+            >
+              <ul className="space-y-1.5 text-sm">
+                {app.notes.missing_requirements.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ul>
+              <p className="mt-3 text-xs text-muted-foreground">
+                Requirements you don't meet yet. Be ready to address them honestly.
+              </p>
             </Panel>
           )}
           <Panel title="Keywords covered">
             <div className="flex flex-wrap gap-1.5">
-              {app.notes.keywords_covered.map((k) => <span key={k} className="rounded-md bg-primary-soft px-2 py-0.5 text-xs text-accent-foreground">{k}</span>)}
+              {app.notes.keywords_covered.map((k) => (
+                <span
+                  key={k}
+                  className="rounded-md bg-primary-soft px-2 py-0.5 text-xs text-accent-foreground"
+                >
+                  {k}
+                </span>
+              ))}
             </div>
           </Panel>
           <Panel title="What was changed">
-            <ul className="list-disc space-y-1.5 pl-4 text-sm text-foreground/80">{app.notes.changes.map((c) => <li key={c}>{c}</li>)}</ul>
+            <ul className="list-disc space-y-1.5 pl-4 text-sm text-foreground/80">
+              {app.notes.changes.map((c) => (
+                <li key={c}>{c}</li>
+              ))}
+            </ul>
           </Panel>
         </aside>
       </div>

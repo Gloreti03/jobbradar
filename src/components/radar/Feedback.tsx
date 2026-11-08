@@ -1,7 +1,12 @@
 // D — Interview feedback (owner: Matilde). Shows the evaluation returned by
 // POST /interview/{application_id}/feedback. Better answers use only true facts from the CV.
 import { Lightbulb, MessageSquareQuote, Sparkles, ThumbsUp, TrendingUp } from "lucide-react";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Panel, Points, ScoreRing } from "@/components/radar/shared";
 import { cn } from "@/lib/utils";
 import type { InterviewFeedback, InterviewQuestion, TranscriptTurn } from "@/types";
@@ -46,7 +51,12 @@ export function Feedback({
           </div>
         </div>
         <div className="mt-6 grid gap-6 text-sm md:grid-cols-2">
-          <Points icon={<ThumbsUp className="size-3.5" />} title="Strengths" items={feedback.strengths} tone="text-primary" />
+          <Points
+            icon={<ThumbsUp className="size-3.5" />}
+            title="Strengths"
+            items={feedback.strengths}
+            tone="text-primary"
+          />
           <Points
             icon={<TrendingUp className="size-3.5" />}
             title="To improve"
@@ -65,7 +75,12 @@ export function Feedback({
               <AccordionItem key={q.question_id} value={String(q.question_id)}>
                 <AccordionTrigger className="text-left hover:no-underline">
                   <div className="flex min-w-0 flex-1 items-start gap-3 pr-3">
-                    <span className={cn("shrink-0 rounded-md px-2 py-0.5 font-mono text-xs font-semibold", scoreTone(q.score))}>
+                    <span
+                      className={cn(
+                        "shrink-0 rounded-md px-2 py-0.5 font-mono text-xs font-semibold",
+                        scoreTone(q.score),
+                      )}
+                    >
                       {q.score}/5
                     </span>
                     <span className="min-w-0">
@@ -81,12 +96,16 @@ export function Feedback({
                 <AccordionContent className="space-y-4 text-sm">
                   {answer != null && (
                     <div>
-                      <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Your answer</div>
+                      <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Your answer
+                      </div>
                       <p className="text-foreground/80">{answer || "—"}</p>
                     </div>
                   )}
                   <div>
-                    <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Comment</div>
+                    <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Comment
+                    </div>
                     <p>{q.comment}</p>
                   </div>
                   <div className="rounded-lg border border-primary/25 bg-primary-soft/50 p-4">
@@ -101,7 +120,8 @@ export function Feedback({
           })}
         </Accordion>
         <p className="mt-4 text-xs text-muted-foreground">
-          Stronger answers are built only from facts in the CV and cover letter you sent and from what you said — nothing invented.
+          Stronger answers are built only from facts in the CV and cover letter you sent and from
+          what you said — nothing invented.
         </p>
       </Panel>
     </div>

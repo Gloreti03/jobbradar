@@ -18,7 +18,8 @@ describe("Downloadable documents", () => {
     expect(doc.getNumberOfPages()).toBe(1);
     expect(doc.internal.pageSize.getWidth()).toBeCloseTo(595.28, 1);
     expect(doc.internal.pageSize.getHeight()).toBeCloseTo(841.89, 1);
-    if (qaDir) writeFileSync(resolve(qaDir, "fixture-cv.pdf"), new Uint8Array(doc.output("arraybuffer")));
+    if (qaDir)
+      writeFileSync(resolve(qaDir, "fixture-cv.pdf"), new Uint8Array(doc.output("arraybuffer")));
   });
 
   it("requires editing an oversized CV instead of clipping it or adding a second page", () => {
@@ -30,7 +31,10 @@ describe("Downloadable documents", () => {
 
   it("fits many short course and grade entries without changing the CV", () => {
     const courseHeavy = structuredClone(cv);
-    courseHeavy.education[0]!.details = Array.from({ length: 30 }, (_, i) => `Course ${i + 1} (30/30)`);
+    courseHeavy.education[0]!.details = Array.from(
+      { length: 30 },
+      (_, i) => `Course ${i + 1} (30/30)`,
+    );
     const before = JSON.stringify(courseHeavy);
     expect(createCVPdf(courseHeavy, fonts).getNumberOfPages()).toBe(1);
     expect(JSON.stringify(courseHeavy)).toBe(before);
@@ -40,11 +44,14 @@ describe("Downloadable documents", () => {
     const doc = createCoverPdf(cv, application.cover_letter, fonts);
     expect(doc.getNumberOfPages()).toBe(1);
     expect(doc.output().startsWith("%PDF-")).toBe(true);
-    if (qaDir) writeFileSync(resolve(qaDir, "fixture-cover.pdf"), new Uint8Array(doc.output("arraybuffer")));
+    if (qaDir)
+      writeFileSync(resolve(qaDir, "fixture-cover.pdf"), new Uint8Array(doc.output("arraybuffer")));
   });
 
   it("produces safe, descriptive filenames", () => {
-    expect(pdfFilename("André / Test", "Øslo: Company", "cv")).toBe("Andre_Test_slo_Company_CV.pdf");
+    expect(pdfFilename("André / Test", "Øslo: Company", "cv")).toBe(
+      "Andre_Test_slo_Company_CV.pdf",
+    );
     expect(pdfFilename("", null, "cover")).toBe("Candidate_Application_Cover_Letter.pdf");
   });
 
@@ -57,7 +64,10 @@ describe("Downloadable documents", () => {
       expect(JSON.stringify(actual.cv)).toBe(before);
       writeFileSync(resolve(qaDir, "actual-cv.pdf"), new Uint8Array(doc.output("arraybuffer")));
       const cover = createCoverPdf(actual.cv, actual.cover_letter, fonts);
-      writeFileSync(resolve(qaDir, "actual-cover.pdf"), new Uint8Array(cover.output("arraybuffer")));
+      writeFileSync(
+        resolve(qaDir, "actual-cover.pdf"),
+        new Uint8Array(cover.output("arraybuffer")),
+      );
     });
   }
 });

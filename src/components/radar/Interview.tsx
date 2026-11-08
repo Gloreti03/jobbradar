@@ -5,13 +5,32 @@ import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Bot, CheckCircle2, Loader2, Lock, MessagesSquare, Mic, RotateCcw, Send, Sparkles, User } from "lucide-react";
+import {
+  ArrowLeft,
+  Bot,
+  CheckCircle2,
+  Loader2,
+  Lock,
+  MessagesSquare,
+  Mic,
+  RotateCcw,
+  Send,
+  Sparkles,
+  User,
+} from "lucide-react";
 import { api, isNotFound, qk } from "@/api";
-import type { ApplicationOut, InterviewFeedback, InterviewOut, InterviewQuestion, TranscriptTurn } from "@/types";
+import type {
+  ApplicationOut,
+  InterviewFeedback,
+  InterviewOut,
+  InterviewQuestion,
+  TranscriptTurn,
+} from "@/types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { EmptyState, ErrorState, LoadingState, Panel, formatDate } from "@/components/radar/shared";
+import { EmptyState, ErrorState, LoadingState, Panel } from "@/components/radar/shared";
+import { formatDate } from "@/lib/format-date";
 import { Feedback } from "@/components/radar/Feedback";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +40,10 @@ const VoiceInterview = lazy(() => import("@/components/radar/VoiceInterview"));
 const PLAN_PREVIEW: { kind: string; text: string }[] = [
   { kind: "Intro", text: "Who you are and why this role" },
   { kind: "Experience ×2", text: "Real situations from the CV you sent" },
-  { kind: "Technical ×2", text: "Key requirements of the job ad — one may be a gap you don't meet yet" },
+  {
+    kind: "Technical ×2",
+    text: "Key requirements of the job ad — one may be a gap you don't meet yet",
+  },
   { kind: "Motivation", text: "Why this company, what you want to learn" },
 ];
 
@@ -50,14 +72,17 @@ export function Interview({ app }: { app: ApplicationOut }) {
         body='The mock interview is based on the CV and cover letter you actually sent. Submit on the company site, then press "I applied".'
         action={
           <Button asChild>
-            <Link to="/applications/$id" params={{ id: String(app.id) }}>Go to application</Link>
+            <Link to="/applications/$id" params={{ id: String(app.id) }}>
+              Go to application
+            </Link>
           </Button>
         }
       />
     );
   }
   if (existing.isPending) return <LoadingState label="Loading interview…" />;
-  if (existing.isError) return <ErrorState error={existing.error} onRetry={() => existing.refetch()} />;
+  if (existing.isError)
+    return <ErrorState error={existing.error} onRetry={() => existing.refetch()} />;
   return <InterviewSession app={app} initial={existing.data} />;
 }
 
@@ -83,7 +108,9 @@ function InterviewSession({ app, initial }: { app: ApplicationOut; initial: Inte
     mutationFn: () => api.startInterview(app.id, "text"),
     onSuccess: (r) => {
       setPlan(r.plan);
-      setTranscript([{ role: "interviewer", content: r.message, question_id: r.plan[0]?.id ?? null }]);
+      setTranscript([
+        { role: "interviewer", content: r.message, question_id: r.plan[0]?.id ?? null },
+      ]);
       setFeedback(null);
       setDraft("");
       qc.invalidateQueries({ queryKey: qk.interview(app.id) });
@@ -95,12 +122,22 @@ function InterviewSession({ app, initial }: { app: ApplicationOut; initial: Inte
     mutationFn: (answer: string) => api.interviewTurn(app.id, answer),
     onMutate: (answer) => {
       // show the answer right away
-      setTranscript((t) => [...t, { role: "candidate", content: answer, question_id: current?.id ?? null }]);
+      setTranscript((t) => [
+        ...t,
+        { role: "candidate", content: answer, question_id: current?.id ?? null },
+      ]);
       setDraft("");
     },
     onSuccess: (r) => {
       const next = plan[r.question_index];
-      setTranscript((t) => [...t, { role: "interviewer", content: r.message, question_id: r.done ? null : next?.id ?? null }]);
+      setTranscript((t) => [
+        ...t,
+        {
+          role: "interviewer",
+          content: r.message,
+          question_id: r.done ? null : (next?.id ?? null),
+        },
+      ]);
     },
     onError: (e, answer) => {
       setTranscript((t) => t.slice(0, -1)); // remove the optimistic answer
@@ -147,7 +184,8 @@ function InterviewSession({ app, initial }: { app: ApplicationOut; initial: Inte
               <Mic /> Voice interview
             </Button>
             <Button variant="outline" disabled={startM.isPending} onClick={() => startM.mutate()}>
-              {startM.isPending ? <Loader2 className="animate-spin" /> : <RotateCcw />} New text interview
+              {startM.isPending ? <Loader2 className="animate-spin" /> : <RotateCcw />} New text
+              interview
             </Button>
           </div>
         )}
@@ -190,7 +228,8 @@ function InterviewSession({ app, initial }: { app: ApplicationOut; initial: Inte
             <div>
               <h2 className="text-lg font-semibold">A 6-question mock interview</h2>
               <p className="text-sm text-muted-foreground">
-                Built from this job ad and the CV and cover letter you sent. Type your answers as you would say them.
+                Built from this job ad and the CV and cover letter you sent. Type your answers as
+                you would say them.
               </p>
             </div>
           </div>
@@ -202,10 +241,16 @@ function InterviewSession({ app, initial }: { app: ApplicationOut; initial: Inte
               </li>
             ))}
           </ul>
-          <Button size="lg" className="w-full" disabled={startM.isPending} onClick={() => startM.mutate()}>
+          <Button
+            size="lg"
+            className="w-full"
+            disabled={startM.isPending}
+            onClick={() => startM.mutate()}
+          >
             {startM.isPending ? (
               <>
-                <Loader2 className="animate-spin" /> Preparing questions from your CV and the job ad…
+                <Loader2 className="animate-spin" /> Preparing questions from your CV and the job
+                ad…
               </>
             ) : (
               <>
@@ -213,10 +258,18 @@ function InterviewSession({ app, initial }: { app: ApplicationOut; initial: Inte
               </>
             )}
           </Button>
-          <Button size="lg" variant="outline" className="mt-3 w-full" disabled={startM.isPending} onClick={() => setVoice(true)}>
+          <Button
+            size="lg"
+            variant="outline"
+            className="mt-3 w-full"
+            disabled={startM.isPending}
+            onClick={() => setVoice(true)}
+          >
             <Mic /> Start voice interview
           </Button>
-          <p className="mt-3 text-center text-xs text-muted-foreground">At the end you get a score and a stronger answer for every question.</p>
+          <p className="mt-3 text-center text-xs text-muted-foreground">
+            At the end you get a score and a stronger answer for every question.
+          </p>
         </Panel>
       </div>
     );
@@ -239,7 +292,9 @@ function InterviewSession({ app, initial }: { app: ApplicationOut; initial: Inte
       <div className="mx-auto max-w-3xl">
         <div className="mb-4">
           <div className="mb-1.5 flex justify-between text-sm text-muted-foreground">
-            <span>{done ? "All questions answered" : `Question ${answered + 1} of ${plan.length}`}</span>
+            <span>
+              {done ? "All questions answered" : `Question ${answered + 1} of ${plan.length}`}
+            </span>
             {current && !done && <span className="truncate pl-4">Focus: {current.focus}</span>}
           </div>
           <Progress value={(answered / plan.length) * 100} />
@@ -252,7 +307,8 @@ function InterviewSession({ app, initial }: { app: ApplicationOut; initial: Inte
             ))}
             {turnM.isPending && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Bot className="size-4" /> <Loader2 className="size-4 animate-spin" /> Interviewer is thinking…
+                <Bot className="size-4" /> <Loader2 className="size-4 animate-spin" /> Interviewer
+                is thinking…
               </div>
             )}
             <div ref={bottomRef} />
@@ -291,7 +347,9 @@ function InterviewSession({ app, initial }: { app: ApplicationOut; initial: Inte
                   }}
                 />
                 <div className="mt-2 flex flex-wrap items-center gap-3">
-                  <span className="mr-auto text-xs text-muted-foreground">Ctrl + Enter to send</span>
+                  <span className="mr-auto text-xs text-muted-foreground">
+                    Ctrl + Enter to send
+                  </span>
                   {answered > 0 && (
                     <Button
                       variant="ghost"
@@ -299,7 +357,8 @@ function InterviewSession({ app, initial }: { app: ApplicationOut; initial: Inte
                       disabled={feedbackM.isPending || turnM.isPending}
                       onClick={() => feedbackM.mutate()}
                     >
-                      {feedbackM.isPending ? <Loader2 className="animate-spin" /> : null} Finish now and get feedback
+                      {feedbackM.isPending ? <Loader2 className="animate-spin" /> : null} Finish now
+                      and get feedback
                     </Button>
                   )}
                   <Button disabled={!draft.trim() || turnM.isPending} onClick={send}>

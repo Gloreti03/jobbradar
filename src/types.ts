@@ -1,6 +1,7 @@
 // Mirrors backend schemas.py exactly (snake_case). Do not rename fields.
 
-export type JobSource = "nav" | "teamtailor" | "greenhouse" | "lever" | "ashby" | "extension" | "fixture";
+export type JobSource =
+  "nav" | "teamtailor" | "greenhouse" | "lever" | "ashby" | "extension" | "fixture";
 export type JobStatus = "active" | "inactive";
 export type JobLanguage = "no" | "en";
 export type Verdict = "strong" | "good" | "stretch" | "poor";
@@ -15,7 +16,10 @@ export interface Contacts {
   github: string | null;
   website: string | null;
 }
-export interface LanguageSkill { language: string; level: string }
+export interface LanguageSkill {
+  language: string;
+  level: string;
+}
 export interface Experience {
   role: string;
   company: string;
@@ -32,7 +36,12 @@ export interface Education {
   end_date: string | null;
   details: string[];
 }
-export interface Project { name: string; description: string; tools: string[]; url: string | null }
+export interface Project {
+  name: string;
+  description: string;
+  tools: string[];
+  url: string | null;
+}
 export interface Preferences {
   roles: string[];
   cities: string[];
@@ -55,10 +64,25 @@ export interface Profile {
   search_terms: string[];
   missing_info: string[];
 }
-export interface ProfileOut { id: number; profile: Profile; extra_text: string; updated_at: string; warnings?: string[]; reset?: boolean }
-export interface ProfileUpdate { profile: Profile; extra_text?: string | null }
-export interface MissingInfoAnswer { question: string; answer: string }
-export interface ProfileAnswers { answers: MissingInfoAnswer[] }
+export interface ProfileOut {
+  id: number;
+  profile: Profile;
+  extra_text: string;
+  updated_at: string;
+  warnings?: string[];
+  reset?: boolean;
+}
+export interface ProfileUpdate {
+  profile: Profile;
+  extra_text?: string | null;
+}
+export interface MissingInfoAnswer {
+  question: string;
+  answer: string;
+}
+export interface ProfileAnswers {
+  answers: MissingInfoAnswer[];
+}
 
 export interface JobOut {
   id: number;
@@ -84,8 +108,15 @@ export interface MatchOut {
   gaps: string[];
   to_clarify: string[];
 }
-export interface RadarRequest { days: 3 | 7 | 14 | 30; english_only: boolean; refresh: boolean }
-export interface RadarResult { job: JobOut; match: MatchOut }
+export interface RadarRequest {
+  days: 3 | 7 | 14 | 30;
+  english_only: boolean;
+  refresh: boolean;
+}
+export interface RadarResult {
+  job: JobOut;
+  match: MatchOut;
+}
 export interface RadarFunnel {
   total: number;
   recent: number;
@@ -106,8 +137,15 @@ export interface RadarResponse {
   generated_at: string;
   funnel?: RadarFunnel | null;
 }
-export interface ApplicationRef { id: number; status: ApplicationStatus }
-export interface JobDetail { job: JobOut; match: MatchOut | null; application: ApplicationRef | null }
+export interface ApplicationRef {
+  id: number;
+  status: ApplicationStatus;
+}
+export interface JobDetail {
+  job: JobOut;
+  match: MatchOut | null;
+  application: ApplicationRef | null;
+}
 
 export interface TailoredCV {
   name: string;
@@ -132,7 +170,12 @@ export interface ApplicationNotes {
   changes: string[];
   requirement_map?: RequirementMatch[];
 }
-export interface Snapshot { job: JobOut; cv: TailoredCV; cover_letter: string; applied_at: string }
+export interface Snapshot {
+  job: JobOut;
+  cv: TailoredCV;
+  cover_letter: string;
+  applied_at: string;
+}
 export interface ApplicationPatch {
   cv?: TailoredCV | null;
   cover_letter?: string | null;
@@ -152,13 +195,28 @@ export interface ApplicationOut {
   applied_at: string | null;
 }
 
-export const APPLICATION_STATUSES: ApplicationStatus[] = ["draft", "applied", "interviewing", "rejected", "offer"];
+export const APPLICATION_STATUSES: ApplicationStatus[] = [
+  "draft",
+  "applied",
+  "interviewing",
+  "rejected",
+  "offer",
+];
 
 // ---------------------------------------------------------------- D — Mock interview (Matilde)
 export type InterviewMode = "text" | "voice";
 export type QuestionKind = "intro" | "behavioral" | "technical" | "motivation" | "gap";
-export interface InterviewQuestion { id: number; kind: QuestionKind; question: string; focus: string }
-export interface TranscriptTurn { role: "interviewer" | "candidate"; content: string; question_id: number | null }
+export interface InterviewQuestion {
+  id: number;
+  kind: QuestionKind;
+  question: string;
+  focus: string;
+}
+export interface TranscriptTurn {
+  role: "interviewer" | "candidate";
+  content: string;
+  question_id: number | null;
+}
 export interface QuestionFeedback {
   question_id: number;
   question: string;
@@ -195,6 +253,11 @@ export interface InterviewOut {
   transcript: TranscriptTurn[];
   feedback: InterviewFeedback | null;
 }
-export interface SignedUrlResponse { signed_url: string }
+export interface SignedUrlResponse {
+  signed_url: string;
+}
 /** One message of the ElevenLabs voice call (body of POST /interview/{id}/voice-transcript). */
-export interface VoiceTurn { role: "interviewer" | "candidate"; content: string }
+export interface VoiceTurn {
+  role: "interviewer" | "candidate";
+  content: string;
+}

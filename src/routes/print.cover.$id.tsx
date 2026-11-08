@@ -19,7 +19,11 @@ export const Route = createFileRoute("/print/cover/$id")({
 
 function PrintCover() {
   const id = Number(Route.useParams().id);
-  const q = useQuery({ queryKey: qk.application(id), queryFn: () => api.getApplication(id), staleTime: 0 });
+  const q = useQuery({
+    queryKey: qk.application(id),
+    queryFn: () => api.getApplication(id),
+    staleTime: 0,
+  });
   const printed = useRef(false);
   useEffect(() => {
     if (q.isSuccess && !printed.current) {

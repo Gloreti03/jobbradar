@@ -24,7 +24,7 @@ log = logging.getLogger("tailor")
 MAX_DESCRIPTION_CHARS = 12_000
 MAX_MISSING_REQUIREMENTS = 6  # more than this does not fit on a card
 MIN_WORD_OVERLAP = 0.85  # share of a quote's words that must appear in the material
-REASONING_EFFORT = "none"  # no hidden reasoning: ~2x faster (BLUEPRINT: < 30 s)
+REASONING_EFFORT = "none"  # no hidden reasoning: ~2x faster (target: < 30 s)
 NORWEGIAN_OK_LEVELS = {"native", "c2", "c1", "b2"}
 NORWEGIAN_NAMES = {"norwegian", "norsk", "bokmål", "bokmal", "nynorsk"}
 
@@ -132,7 +132,7 @@ def missing_from_map(items: list[RequirementMatch]) -> list[str]:
 
 
 def choose_language(job: JobOut, profile: Profile) -> DocLanguage:
-    """Norwegian only if the ad is in Norwegian AND the candidate has Norwegian >= B2 (BLUEPRINT sec. 8)."""
+    """Norwegian only if the ad is in Norwegian AND the candidate has Norwegian >= B2 (README, "Rules for everyone")."""
     if job.language != "no":
         return "en"
     for lang in profile.languages:
@@ -208,7 +208,7 @@ def tailor(
         location=job.location or "(unknown)",
         description=(job.description or "(no description available)")[:MAX_DESCRIPTION_CHARS],
     )
-    # fast model: ~15-20 s vs ~60-100 s for the smart one, same quality in tests (BLUEPRINT: < 30 s)
+    # fast model: ~15-20 s vs ~60-100 s for the smart one, same quality in tests (target: < 30 s)
     out = complete_json(
         "fast", system, user, TailorOutput, temperature=0.2, max_tokens=10000, reasoning_effort=reasoning_effort
     )

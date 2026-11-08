@@ -1,4 +1,4 @@
-"""SQLite tables (BLUEPRINT sec. 5). Whoever changes them tells the group (owner: Gabriele).
+"""SQLite tables (see README, "API"). Whoever changes them tells the group (owner: Gabriele).
 
 JSON columns hold dicts of the models in schemas.py
 (e.g. profiles.data = Profile, applications.cv = TailoredCV).

@@ -5,7 +5,7 @@ Only touch your own section to avoid merge conflicts.
 The output JSON schema is appended by llm.py: only instructions here.
 """
 
-# Rules shared by ALL prompts that produce text about the candidate (BLUEPRINT sec. 8)
+# Rules shared by ALL prompts that produce text about the candidate (README, "Rules for everyone")
 NO_INVENTION_RULES = """\
 Hard rules:
 - NEVER invent experiences, companies, dates, numbers, tools, certifications or achievements.

@@ -1,4 +1,4 @@
-"""CONTRACT between frontend, extension and backend (BLUEPRINT sec. 6).
+"""CONTRACT between frontend, extension and backend (see README, "API").
 
 - All fields are snake_case.
 - The files in fixtures/ have EXACTLY these shapes: if a real API answers

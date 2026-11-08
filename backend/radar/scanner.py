@@ -169,7 +169,9 @@ def load_seed(path: Path = SEED_PATH) -> int:
         item = NormalizedJob.model_validate(job.model_dump())
         if job.description:
             language, required = language_flags(job.title, job.description)
-            item = item.model_copy(update={"language": language or item.language, "norwegian_required": required})
+            # A full description can disprove an old label (e.g. Swedish saved as "no").
+            # Do not restore that stale label when the detector correctly returns null.
+            item = item.model_copy(update={"language": language, "norwegian_required": required})
         normalized.append(item)
     init_db()
     return save_jobs(normalized)

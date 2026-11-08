@@ -21,12 +21,14 @@ import re
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
+from openai import OpenAIError
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from db import get_db
 from fixtures import load_fixture
+from llm import LLMError
 from models import ApplicationRow, InterviewRow
 from schemas import (
     ApplicationNotes,
@@ -183,9 +185,17 @@ def _words(text: str) -> set[str]:
     return {w for w in re.findall(r"[a-zæøå0-9]+", text.lower()) if len(w) >= 4 and w not in _STOPWORDS}
 
 
-def _asked_question(text: str, plan: list[InterviewQuestion], index: int) -> int:
-    """Index of the plan question an interviewer message asks, or the current index if it only
-    acknowledges / asks to complete the current answer. Only moves forward."""
+def _question_text(text: str) -> str:
+    """Keep the spoken question, excluding acknowledgements about the preceding answer."""
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    return " ".join(sentence for sentence in sentences if "?" in sentence or re.match(
+        r"(?:tell me|describe|explain|walk me through|share\b|(?:can|could|would) you\b|"
+        r"how\b|what\b|why\b|when\b|where\b|which\b|do you\b|did you\b)", sentence, re.I,
+    ))
+
+
+def _asked_question(text: str, plan: list[InterviewQuestion], index: int) -> int | None:
+    """Match only the question, not an acknowledgement mentioning the preceding topic."""
     said = _words(text)
     best, best_score = index, 0.0
     for i in range(index, len(plan)):
@@ -193,23 +203,60 @@ def _asked_question(text: str, plan: list[InterviewQuestion], index: int) -> int
         score = len(q & said) / len(q) if q else 0.0
         if score > best_score:
             best, best_score = i, score
-    return best if best > index and best_score >= QUESTION_MATCH_MIN else index
+    return best if best_score >= QUESTION_MATCH_MIN else None
 
 
-def _assign_questions(turns: list[VoiceTurn], plan: list[InterviewQuestion]) -> list[TranscriptTurn]:
-    """Voice call messages -> transcript with question ids.
-    Each candidate answer belongs to the current question. An interviewer message moves to the next
-    question only if it actually asks a later plan question (word overlap): acknowledgements and
-    "could you complete your answer?" follow-ups stay on the current one, so a clarification never
-    shifts the answers. The closing line ends the interview. Consecutive candidate messages (the
-    speech recogniser splits long answers) are merged into one answer.
-    Expressive tags like "[enthusiastic]" are removed from the interviewer's messages."""
+def _question_starts(turns: list[VoiceTurn], plan: list[InterviewQuestion]) -> dict[int, int]:
+    starts = {}
+    questions = {}
+    index, answered, ambiguous = 0, False, False
+    for i, turn in enumerate(turns):
+        if turn.role == "candidate":
+            answered = True
+            continue
+        if CLOSING_MARK in turn.content.lower().replace("’", "'"):
+            break
+        question = _question_text(turn.content)
+        if not question:
+            continue
+        questions[i] = question
+        match = _asked_question(question, plan, index)
+        if match is None:
+            if answered:
+                ambiguous = True
+            elif not starts and index == 0:
+                starts[i] = plan[0].id
+        elif match > index:
+            index, answered = match, False
+            starts[i] = plan[index].id
+        elif not starts and not answered:
+            starts[i] = plan[index].id
+    if ambiguous:
+        transcript = [TranscriptTurn(role=t.role, content=t.content, question_id=None) for t in turns]
+        try:
+            return svc.map_voice_questions(plan, transcript, starts, questions)
+        except OpenAIError as error:
+            raise LLMError("Could not align the voice questions. Retry saving the transcript.") from error
+    return starts
+
+
+def _assign_questions(
+    turns: list[VoiceTurn], plan: list[InterviewQuestion]
+) -> tuple[list[TranscriptTurn], list[InterviewQuestion]]:
+    """Assign answers to question slots and retain the questions actually spoken.
+
+    Exact/close plan questions need no model call. Ambiguous new topics versus clarifications are
+    resolved together, once, before saving. Follow-ups remain on the current question, split answers
+    are merged and speech after the closing line is ignored.
+    """
+    turns = [VoiceTurn(role=t.role, content=text) for t in turns if (text := _clean(t))]
+    starts = _question_starts(turns, plan)
+    spoken_plan = list(plan)
+    positions = {q.id: i for i, q in enumerate(plan)}
     out: list[TranscriptTurn] = []
     index = 0  # current question (0-based); len(plan) = interview closed
-    for turn in turns:
-        text = _clean(turn)
-        if not text:
-            continue
+    for i, turn in enumerate(turns):
+        text = turn.content
         if turn.role == "candidate":
             if index >= len(plan):
                 continue  # talking after the closing line: not part of the interview
@@ -220,11 +267,22 @@ def _assign_questions(turns: list[VoiceTurn], plan: list[InterviewQuestion]) -> 
         else:
             if CLOSING_MARK in text.lower().replace("’", "'"):
                 index = len(plan)
-            elif index < len(plan):
-                index = _asked_question(text, plan, index)
+            elif index < len(plan) and i in starts:
+                index = positions[starts[i]]
+                question = _question_text(text)
+                if not question:
+                    raise LLMError("Voice question mapping points to a turn without a question")
+                # A planned question may start with a factual context sentence. Preserve that
+                # context when the agent used its exact wording after an acknowledgement.
+                original = plan[index]
+                if original.question not in text:
+                    spoken_plan[index] = original.model_copy(update={
+                        "question": question,
+                        "focus": "Evaluate the answer to the question actually asked",
+                    })
             qid = plan[index].id if index < len(plan) else None
             out.append(TranscriptTurn(role="interviewer", content=text, question_id=qid))
-    return out
+    return out, spoken_plan
 
 
 @router.post("/{application_id}/voice-transcript", response_model=InterviewOut)
@@ -234,11 +292,12 @@ def save_voice_transcript(application_id: int, body: VoiceTranscriptRequest, db:
     _load_application(db, application_id)
     row = _latest_interview(db, application_id)
     plan = [InterviewQuestion.model_validate(q) for q in row.plan]
-    transcript = _assign_questions(body.transcript, plan)
+    transcript, spoken_plan = _assign_questions(body.transcript, plan)
     if not any(t.role == "candidate" for t in transcript):
         raise HTTPException(status_code=422, detail="No answers in the voice transcript: nothing to evaluate")
 
     row.mode = "voice"
+    row.plan = [q.model_dump() for q in spoken_plan]
     row.transcript = [t.model_dump() for t in transcript]
     row.feedback = None  # a new transcript needs a new evaluation
     db.commit()
@@ -254,8 +313,8 @@ def save_voice_transcript(application_id: int, body: VoiceTranscriptRequest, db:
 
 @router.post("/{application_id}/feedback", response_model=InterviewFeedback)
 def interview_feedback(application_id: int, db: Session = Depends(get_db)):
-    """Final evaluation (~10-20 s). Also works for an interview stopped early
-    (unanswered questions get score 1). Computed once, then returned from the DB."""
+    """Evaluate answered questions only, including an interview stopped early.
+    Computed once, then returned from the DB."""
     snapshot, _, language = _load_application(db, application_id)
     row = _latest_interview(db, application_id)
     if row.feedback:

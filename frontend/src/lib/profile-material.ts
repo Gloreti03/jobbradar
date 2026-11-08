@@ -11,7 +11,11 @@ export function splitProfileMaterial(text: string) {
 export function mergeAttachments(current: File[], incoming: File[]) {
   const files = [...current];
   for (const file of incoming) {
-    if (!files.some((f) => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified)) {
+    if (
+      !files.some(
+        (f) => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified,
+      )
+    ) {
       files.push(file);
     }
   }

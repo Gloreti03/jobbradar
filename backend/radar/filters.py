@@ -10,6 +10,14 @@ OSLO_AREA = ("oslo", "lysaker", "fornebu", "sandvika", "bærum", "asker", "lille
 SENIORITY_WORDS = {"intern", "junior", "graduate", "nyutdannet", "trainee", "senior", "mid", "lead", "principal", "head", "director", "chief"}
 ENTRY_ROLES = {"intern", "graduate", "nyutdannet", "trainee"}
 GENERIC_ROLE_WORDS = {"developer", "engineer", "utvikler", "ingeniør", "programmer", "of"}
+NORWEGIAN_WORDS = {"og", "som", "til", "søker", "er", "med", "arbeid", "arbeidsoppgaver", "kvalifikasjoner", "deg", "du", "vi"}
+ENGLISH_WORDS = {"the", "and", "with", "you", "we", "our", "are", "requirements", "experience", "work"}
+SWEDISH_WORDS = {
+    "och", "att", "är", "för", "från", "söker", "arbete", "arbeta", "arbetar", "arbetsuppgifter",
+    "kvalifikationer", "dig", "våra", "inte", "erfarenhet", "behöver", "tjänsten", "utvecklar",
+    "utveckla", "erbjuder", "också", "där", "när", "hjälper",
+}
+NORWEGIAN_SPECIFIC_WORDS = NORWEGIAN_WORDS - {"som", "med", "du", "vi"}
 OPTIONAL_NORWEGIAN = re.compile(
     r"\bnorwegian(?:[- \t]+(?:language|speaking|skills?|proficiency|fluency|knowledge)){0,3}[ \t]+"
     r"(?:(?:is|are|would be|will be|considered|seen as|also|highly|strongly)[ \t]+){0,4}"
@@ -58,10 +66,18 @@ def contains_term(text: str, term: str) -> bool:
 
 def language_flags(title: str, description: str) -> tuple[str | None, bool | None]:
     text = f"{title}\n{description}".casefold()
-    words = re.findall(r"[a-zæøå]+", text)
-    norwegian = sum(word in {"og", "som", "til", "søker", "er", "med", "arbeid", "arbeidsoppgaver", "kvalifikasjoner", "deg", "du", "vi"} for word in words)
-    english = sum(word in {"the", "and", "with", "you", "we", "our", "are", "requirements", "experience", "work"} for word in words)
+    words = re.findall(r"[^\W\d_]+", text)  # preserve Swedish ä/ö as well as Norwegian æ/ø/å
+    norwegian = sum(word in NORWEGIAN_WORDS for word in words)
+    english = sum(word in ENGLISH_WORDS for word in words)
+    swedish = sum(word in SWEDISH_WORDS for word in words)
+    norwegian_specific = sum(word in NORWEGIAN_SPECIFIC_WORDS for word in words)
     language = "no" if norwegian > english else "en" if english else None
+    # Shared words such as vi/du/med are not evidence against Swedish. Require multiple
+    # distinct Swedish markers and dominance over English/Norwegian-specific evidence,
+    # so a short quote or a language requirement cannot relabel an otherwise English ad.
+    # The API supports only no/en: other posting languages must remain null.
+    if len(set(words) & SWEDISH_WORDS) >= 2 and swedish > max(english, norwegian_specific):
+        language = None
     # Remove optional language phrases before checking the remaining requirements.
     # A separate mandatory clause still wins over an optional one.
     requirement_text, optional_count = OPTIONAL_NORWEGIAN.subn(" ", text)

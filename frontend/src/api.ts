@@ -30,11 +30,16 @@ import applicationFixture from "./mocks/application.json";
 import interviewFixture from "./mocks/interview.json";
 
 export const USE_MOCKS = String(import.meta.env["VITE_USE_MOCKS"] ?? "true") !== "false";
-export const API_URL = (import.meta.env["VITE_API_URL"] as string | undefined) ?? "http://localhost:8000";
+export const API_URL =
+  (import.meta.env["VITE_API_URL"] as string | undefined) ?? "http://localhost:8000";
 
 export type ApiErrorKind = "not_found" | "network" | "server" | "client";
 export class ApiError extends Error {
-  constructor(public kind: ApiErrorKind, message: string, public status?: number) {
+  constructor(
+    public kind: ApiErrorKind,
+    message: string,
+    public status?: number,
+  ) {
     super(message);
   }
 }
@@ -60,7 +65,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       /* non-JSON error body */
     }
-    const kind: ApiErrorKind = res.status === 404 ? "not_found" : res.status >= 500 ? "server" : "client";
+    const kind: ApiErrorKind =
+      res.status === 404 ? "not_found" : res.status >= 500 ? "server" : "client";
     throw new ApiError(kind, msg, res.status);
   }
   return (await res.json()) as T;
@@ -87,13 +93,23 @@ const real = {
   createApplication: (job_id: number) =>
     request<ApplicationOut>("/applications", { method: "POST", body: JSON.stringify({ job_id }) }),
   patchApplication: (id: number, patch: ApplicationPatch) =>
-    request<ApplicationOut>(`/applications/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
-  markApplied: (id: number) => request<ApplicationOut>(`/applications/${id}/applied`, { method: "POST" }),
+    request<ApplicationOut>(`/applications/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
+  markApplied: (id: number) =>
+    request<ApplicationOut>(`/applications/${id}/applied`, { method: "POST" }),
   // D — mock interview (Matilde)
   startInterview: (applicationId: number, mode: InterviewMode = "text") =>
-    request<InterviewStartResponse>(`/interview/${applicationId}/start`, { method: "POST", body: JSON.stringify({ mode }) }),
+    request<InterviewStartResponse>(`/interview/${applicationId}/start`, {
+      method: "POST",
+      body: JSON.stringify({ mode }),
+    }),
   interviewTurn: (applicationId: number, answer: string) =>
-    request<InterviewTurnResponse>(`/interview/${applicationId}/turn`, { method: "POST", body: JSON.stringify({ answer }) }),
+    request<InterviewTurnResponse>(`/interview/${applicationId}/turn`, {
+      method: "POST",
+      body: JSON.stringify({ answer }),
+    }),
   interviewFeedback: (applicationId: number) =>
     request<InterviewFeedback>(`/interview/${applicationId}/feedback`, { method: "POST" }),
   getInterview: (applicationId: number) => request<InterviewOut>(`/interview/${applicationId}`),
@@ -173,7 +189,11 @@ const mock = {
     await delay(1400);
     const s = load();
     // Demo: the uploaded CV is "parsed" into the fixture profile.
-    s.profile = { ...clone(profileFixture as unknown as ProfileOut), extra_text: extraText, updated_at: now() };
+    s.profile = {
+      ...clone(profileFixture as unknown as ProfileOut),
+      extra_text: extraText,
+      updated_at: now(),
+    };
     save(s);
     return s.profile;
   },
@@ -197,9 +217,16 @@ const mock = {
     const answers = body.answers.filter((a) => a.answer.trim());
     if (!answers.length) throw new ApiError("client", "Write at least one answer", 422);
     const answered = new Set(answers.map((a) => a.question.trim().toLowerCase()));
-    s.profile.profile.missing_info = s.profile.profile.missing_info.filter((q) => !answered.has(q.trim().toLowerCase()));
+    s.profile.profile.missing_info = s.profile.profile.missing_info.filter(
+      (q) => !answered.has(q.trim().toLowerCase()),
+    );
     const transcript = answers.map((a) => `Q: ${a.question}\nA: ${a.answer.trim()}`).join("\n");
-    s.profile.extra_text = [s.profile.extra_text, `--- Answers to profile questions ---\n${transcript}`].filter(Boolean).join("\n\n");
+    s.profile.extra_text = [
+      s.profile.extra_text,
+      `--- Answers to profile questions ---\n${transcript}`,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
     s.profile.updated_at = now();
     // Demo mode stores answers, but does not pretend to run AI or infer new roles.
     save(s);
@@ -214,7 +241,8 @@ const mock = {
     const windows = [3, 7, 14, 30];
     const pick = (days: number) =>
       base.results.filter((r) => {
-        if (body.english_only && (r.job.language !== "en" || r.job.norwegian_required)) return false;
+        if (body.english_only && (r.job.language !== "en" || r.job.norwegian_required))
+          return false;
         if (!r.job.posted_at) return true; // date unknown: kept, labelled as such
         return ref - new Date(r.job.posted_at).getTime() <= days * 86400000;
       });
@@ -242,9 +270,15 @@ const mock = {
     const s = load();
     const job = jobs.find((j) => j.id === id);
     if (!job) throw new ApiError("not_found", "Job not found", 404);
-    const match = (radarFixture as unknown as RadarResponse).results.find((r) => r.job.id === id)?.match ?? null;
+    const match =
+      (radarFixture as unknown as RadarResponse).results.find((r) => r.job.id === id)?.match ??
+      null;
     const app = s.applications.find((a) => a.job_id === id);
-    return { job: clone(job), match: clone(match), application: app ? { id: app.id, status: app.status } : null };
+    return {
+      job: clone(job),
+      match: clone(match),
+      application: app ? { id: app.id, status: app.status } : null,
+    };
   },
   async listApplications(): Promise<ApplicationOut[]> {
     await delay();
@@ -265,7 +299,9 @@ const mock = {
     const job = jobs.find((j) => j.id === job_id);
     if (!job) throw new ApiError("not_found", "Job not found", 404);
     const p = s.profile.profile;
-    const match = (radarFixture as unknown as RadarResponse).results.find((r) => r.job.id === job_id)?.match;
+    const match = (radarFixture as unknown as RadarResponse).results.find(
+      (r) => r.job.id === job_id,
+    )?.match;
     const app: ApplicationOut = {
       id: Math.max(0, ...s.applications.map((a) => a.id)) + 1,
       job_id,
@@ -307,31 +343,60 @@ const mock = {
     const at = now();
     a.status = "applied";
     a.applied_at = at;
-    a.snapshot = { job: clone(a.job), cv: clone(a.cv), cover_letter: a.cover_letter, applied_at: at };
+    a.snapshot = {
+      job: clone(a.job),
+      cv: clone(a.cv),
+      cover_letter: a.cover_letter,
+      applied_at: at,
+    };
     save(s);
     return a;
   },
   // D — mock interview (Matilde): follows src/mocks/interview.json, state in its own localStorage key
-  async startInterview(applicationId: number, mode: InterviewMode = "text"): Promise<InterviewStartResponse> {
+  async startInterview(
+    applicationId: number,
+    mode: InterviewMode = "text",
+  ): Promise<InterviewStartResponse> {
     await delay(1500);
     mockInterviewUnlocked(applicationId);
     const fx = clone(interviewFixture as unknown as InterviewOut);
     const first = fx.transcript.find((t) => t.role === "interviewer")!;
-    const iv: InterviewOut = { ...fx, application_id: applicationId, mode, transcript: [first], feedback: null };
+    const iv: InterviewOut = {
+      ...fx,
+      application_id: applicationId,
+      mode,
+      transcript: [first],
+      feedback: null,
+    };
     saveMockInterview(iv);
-    return { interview_id: iv.id, application_id: applicationId, mode, plan: iv.plan, message: first.content, question_index: 0 };
+    return {
+      interview_id: iv.id,
+      application_id: applicationId,
+      mode,
+      plan: iv.plan,
+      message: first.content,
+      question_index: 0,
+    };
   },
   async interviewTurn(applicationId: number, answer: string): Promise<InterviewTurnResponse> {
     await delay(700);
     const iv = loadMockInterview(applicationId);
     const index = iv.transcript.filter((t) => t.role === "candidate").length;
-    if (index >= iv.plan.length) throw new ApiError("client", "The interview is over: ask for the feedback", 409);
+    if (index >= iv.plan.length)
+      throw new ApiError("client", "The interview is over: ask for the feedback", 409);
     iv.transcript.push({ role: "candidate", content: answer, question_id: iv.plan[index]!.id });
-    const asked = (interviewFixture as unknown as InterviewOut).transcript.filter((t) => t.role === "interviewer");
+    const asked = (interviewFixture as unknown as InterviewOut).transcript.filter(
+      (t) => t.role === "interviewer",
+    );
     const next = asked[index + 1] ?? asked[asked.length - 1]!;
     iv.transcript.push(clone(next));
     saveMockInterview(iv);
-    return { interview_id: iv.id, message: next.content, question_index: index + 1, done: index + 1 >= iv.plan.length };
+    return {
+      interview_id: iv.id,
+      message: next.content,
+      question_index: index + 1,
+      done: index + 1 >= iv.plan.length,
+    };
   },
   async interviewFeedback(applicationId: number): Promise<InterviewFeedback> {
     await delay(2000);
@@ -375,18 +440,30 @@ function mockInterviews(): Record<string, InterviewOut> {
 }
 function saveMockInterview(iv: InterviewOut) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(INTERVIEW_KEY, JSON.stringify({ ...mockInterviews(), [iv.application_id]: iv }));
+  localStorage.setItem(
+    INTERVIEW_KEY,
+    JSON.stringify({ ...mockInterviews(), [iv.application_id]: iv }),
+  );
 }
 function loadMockInterview(applicationId: number): InterviewOut {
   const iv = mockInterviews()[applicationId];
-  if (!iv) throw new ApiError("not_found", "No interview started for this application: call /start first", 404);
+  if (!iv)
+    throw new ApiError(
+      "not_found",
+      "No interview started for this application: call /start first",
+      404,
+    );
   return iv;
 }
 function mockInterviewUnlocked(applicationId: number) {
   const a = load().applications.find((x) => x.id === applicationId);
   if (!a) throw new ApiError("not_found", "Application not found", 404);
   if (a.status === "draft" || !a.snapshot)
-    throw new ApiError("client", 'The mock interview unlocks after you apply: press "I applied" first', 409);
+    throw new ApiError(
+      "client",
+      'The mock interview unlocks after you apply: press "I applied" first',
+      409,
+    );
 }
 
 export const api = USE_MOCKS ? mock : real;

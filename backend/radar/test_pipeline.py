@@ -22,6 +22,12 @@ from radar.scanner import dump_seed, load_seed, save_jobs
 from schemas import JobOut, Preferences, Profile
 
 
+SWEDISH_POSTING = (
+    "Vi utvecklar teknik för våra kunder. Vi söker dig som vill arbeta med teknisk support. "
+    "Du hjälper kunder och behöver erfarenhet av kundservice. Tjänsten är på vårt kontor i Oslo."
+)
+
+
 class SeedTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
@@ -80,6 +86,26 @@ class SeedTests(unittest.TestCase):
             self.assertEqual(row.source_id, "optional-norwegian")
             self.assertEqual(row.language, "en")
             self.assertIs(row.norwegian_required, False)
+            self.assertIsNone(db.get(MatchRow, (1, job_id)))
+
+
+    def test_swedish_legacy_seed_label_is_cleared_and_cached_match_invalidated(self):
+        job = NormalizedJob(source="teamtailor", source_id="swedish-support", title="Support Representative",
+                            company="Test Company", url="https://example.org/swedish-support",
+                            description=SWEDISH_POSTING, language="no", norwegian_required=None)
+        save_jobs([job])
+        with self.session.begin() as db:
+            job_id = db.scalar(select(JobRow.id))
+            db.add(ProfileRow(id=1, data=Profile(name="Test").model_dump()))
+            db.add(MatchRow(profile_id=1, job_id=job_id, score=30, verdict="poor"))
+        path = Path(self.directory.name) / "swedish-seed.json"
+        dump_seed(path)
+        load_seed(path)
+        with self.session() as db:
+            row = db.get(JobRow, job_id)
+            self.assertEqual(row.source_id, "swedish-support")
+            self.assertIsNone(row.language)
+            self.assertIsNone(row.norwegian_required)
             self.assertIsNone(db.get(MatchRow, (1, job_id)))
 
 
@@ -245,6 +271,40 @@ assert parse_date(None) is None
 
 
 class LanguageRequirementTests(unittest.TestCase):
+    def test_swedish_postings_are_not_labelled_norwegian_or_english(self):
+        examples = [
+            SWEDISH_POSTING,
+            "Vi söker dig som vill utveckla nya system. Du arbetar med våra kunder och vår teknik.",
+            "Vi erbjuder en roll där du hjälper kunder. Erfarenhet av support är meriterande.",
+        ]
+        for description in examples:
+            with self.subTest(description=description):
+                self.assertEqual(language_flags("Support Representative", description), (None, None))
+
+    def test_english_and_norwegian_postings_keep_their_language(self):
+        self.assertEqual(language_flags("Data Analyst", "We work with our customers and you will analyse the data."),
+                         ("en", False))
+        self.assertEqual(language_flags("Dataanalytiker", "Vi søker deg som vil jobbe med våre kunder i Sverige og Norge."),
+                         ("no", None))
+
+    def test_swedish_language_requirement_does_not_change_an_english_posting(self):
+        description = "We work with our customers and you will support the team. Swedish is required."
+        self.assertEqual(language_flags("Support Representative", description), ("en", False))
+
+    def test_a_short_swedish_quote_does_not_override_an_english_posting(self):
+        description = ("We work with our customers and you will analyse the data with our team. "
+                       "Our Swedish campaign says 'Vi söker dig'.")
+        self.assertEqual(language_flags("Data Analyst", description), ("en", False))
+
+    def test_swedish_words_in_a_short_quote_do_not_override_a_norwegian_posting(self):
+        description = ("Vi søker deg til vårt team. Du vil jobbe med våre kunder og våre oppgaver i Norge. "
+                       "Vår svenske kampanje heter 'Vi söker dig'.")
+        self.assertEqual(language_flags("Kundebehandler", description), ("no", None))
+
+    def test_norwegian_requirement_is_independent_of_posting_language(self):
+        self.assertEqual(language_flags("Support Representative", SWEDISH_POSTING + " Fluent Norwegian is required."),
+                         (None, True))
+
     def test_optional_norwegian_is_not_a_requirement(self):
         examples = [
             "Good English communication skills; Norwegian is a plus.",
@@ -315,3 +375,16 @@ class LanguageRequirementTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LanguageDetectionTests(unittest.TestCase):
+    def test_swedish_ad_is_not_norwegian(self):
+        text = ("Vi söker en systemutvecklare som vill arbeta med oss. Du har erfarenhet av Python "
+                "och är nyfiken på teknik. Tjänsten är placerad i Stockholm.")
+        self.assertIsNone(language_flags("Systemutvecklare", text)[0])
+
+    def test_norwegian_and_english_ads_keep_their_language(self):
+        norwegian = "Vi søker en utvikler som har erfaring med Python og vil jobbe i et team. Du er nysgjerrig."
+        english = "We are looking for a developer with experience in Python and you will work in our team."
+        self.assertEqual(language_flags("Utvikler", norwegian)[0], "no")
+        self.assertEqual(language_flags("Developer", english)[0], "en")

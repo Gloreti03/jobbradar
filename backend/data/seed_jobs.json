@@ -6711,7 +6711,7 @@
     "expires_at": null,
     "discovered_at": "2026-11-07T10:44:12.765177Z",
     "status": "active",
-    "language": "no",
+    "language": null,
     "norwegian_required": null
   },
   {

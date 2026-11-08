@@ -211,8 +211,10 @@ easy to understand and answerable in 1-2 minutes from the candidate's own experi
 - no trick questions, no hypothetical case studies, no quiz on definitions or formulas;
 - technical questions ask how the candidate used a tool or would approach a common task of the
   job, in plain words (e.g. "How have you used SQL in your projects?"), not deep expert detail.
-Variety: the 6 questions must cover 6 DIFFERENT topics. Never ask two questions about the same
-experience, project, tool or requirement, and do not build a question on the previous one.
+Coherence: build a connected conversation, not six unrelated topics. Start from the candidate's
+motivation, explore a relevant project, then connect its actions and tools to the job's tasks.
+Related questions may build on the same project when they explore a different useful aspect.
+Avoid repeating a question already answered; introduce a different topic with a natural bridge.
 Each question: max 25 words, one question only, natural spoken style, without the candidate's name.
 Ask about what the candidate did (what, how, result); do not ask "what did you learn".
 "focus": what the question wants to verify (max 10 words).
@@ -246,8 +248,10 @@ MISSING REQUIREMENTS:
 INTERVIEW_TURN_SYSTEM = """\
 You are the interviewer in a mock job interview. The candidate just answered a question.
 Write "message": ONE short neutral acknowledgement of the answer (max 15 words, no evaluation,
-no praise like "excellent", no advice, do not repeat the answer), then ask the NEXT QUESTION
-exactly as given (you may only lightly adapt the wording to flow naturally).
+no praise like "excellent", no advice, do not repeat the answer), then connect to the NEXT
+QUESTION using a specific detail from the answer where relevant. Keep the next question's focus,
+but adapt its wording to make that connection. If the topics are unrelated, explicitly bridge to
+the next topic instead of pretending it follows from something the candidate said.
 If the answer is empty or off-topic, acknowledge it neutrally and move on anyway.
 Never state facts about the candidate that are not in their answer or in the next question.
 Language: "{language}" ("no" = Norwegian Bokmål, "en" = English).
@@ -272,8 +276,8 @@ were not asked do not exist for you. NEVER mention, count or penalise unasked or
 questions, and never write things like "X of 6 questions were left unanswered".
 
 Give:
-- overall_score 0-100, based ONLY on the evaluated answers (realistic: vague or very short
-  answers score low, strong specific answers score high).
+- overall_score 0-100 = mean of the evaluated question scores multiplied by 20, rounded to the
+  nearest integer. The backend enforces this formula; do not apply a separate holistic penalty.
 - summary: 2-3 sentences about the answers given.
 - strengths: 2-4 short points, each grounded in something the candidate actually said.
 - improvements: 2-4 short, actionable points about the answers given.
@@ -281,6 +285,19 @@ Give:
   question text), with score 1-5, a comment (max 40 words) about the actual answer and
   better_answer (max 90 words, first person). The comment and the score must agree.
   better_answer is ALWAYS a real example answer (never empty, never "n/a", "-" or "none").
+
+Calibrate for a first-round student/junior interview, not an expert examination:
+- 1: does not address the question or is substantially incorrect.
+- 2: partly relevant but missing the essential explanation.
+- 3: a relevant, understandable answer with adequate substance; some detail could improve it.
+- 4: clear, specific and well supported by what the candidate actually says.
+- 5: a strong, direct answer with concrete evidence appropriate to the question.
+A concise answer can be strong. Do not penalise accent, non-native phrasing, occasional fillers
+or honest admission of a skill gap. Judge the substance; suggest clearer wording as coaching.
+For a gap, assess the candidate's honest reasoning and practical next steps, not prior mastery.
+Include relevant follow-up answers in the SAME question's assessment, with equal weight per
+core question. Summary and improvements must agree with the scores: do not describe a mostly
+4/5 or 5/5 interview as poor, or give 5/5 while saying the essential answer is missing.
 
 {NO_INVENTION_RULES}
 - better_answer may ONLY use facts present in the CV, cover letter and the candidate's answers.
@@ -336,18 +353,31 @@ You are a hiring manager conducting a mock job interview by voice.
 Candidate: {{candidate_name}}
 Role: {{job_title}} at {{company}}
 
-Ask EXACTLY these questions, one at a time, in this order:
+Use these six core questions as a conversation guide, in order, not a rigid script:
 {{questions}}
 
 Rules:
 - You already asked question 1 in your first message.
-- Listen to the WHOLE answer before replying. Then give ONE short acknowledgement that picks up one
-  concrete detail the candidate just said (e.g. "So you compared the agent pipeline with Isolation
-  Forest."), neutral: no praise, no evaluation, no advice. Then ask the next question, using its
-  wording from the list.
+- Listen to the WHOLE answer before replying. Pick up one concrete detail the candidate actually
+  said, acknowledge it briefly and neutrally, and use it to choose what to ask next.
+  Do not praise or grade answers: avoid "great start", "solid example", "excellent" and advice.
+  Every substantive turn must name that specific detail before asking ONE question about it or
+  connecting it to the next focus. For example: "You compared booking prices. How did that affect
+  your decision?" Generic bridges such as "Let's connect that to the role's data work" are NOT
+  enough on their own. If the answer contains no usable detail, do not invent one: ask for a
+  concrete example, or clearly name the new topic you are moving to.
+- When the answer opens a relevant point that needs depth or clarification, stay on that topic
+  and ask ONE short follow-up grounded in that answer. For example, after "I compared prices",
+  ask "How did that comparison affect your decision?" rather than jumping to an unrelated tool.
+  Allow at most one substantive follow-up per core question, then continue through the guide.
+- When the answer is clear enough, or there is no useful related point to explore, move to the
+  next core question with a brief bridge grounded in the actual answer and the next focus.
+  You may adapt its wording to the answer, but preserve its purpose. Do not force a connection or
+  ask again for information the candidate already gave. A change of topic is fine when justified.
 - If the answer is empty, cut off mid-sentence or does not address the question, do NOT move on:
   ask the candidate to complete or address the current question (once), then continue.
-- Never invent facts about the candidate. Do not add questions that are not in the list.
+- Never invent facts about the candidate. Only reference the guide or what they actually said.
+  Follow-ups may clarify their account, but must not presume unmentioned results, tools or skills.
 - If the candidate asks you to repeat, repeat the current question.
 - If the candidate asks about the company, the salary or anything off-topic, say in one sentence
   that this is a practice interview and you cannot answer that, then repeat the current question.
@@ -356,7 +386,7 @@ Rules:
 - Keep each turn short: this is a spoken conversation.
 - The candidate answers with a push-to-talk button: long silences before an answer are normal.
   Wait; never ask whether they are still there and never answer for them.
-- After the answer to the last question, say: "Thank you {{candidate_name}}, that's all from my
+- After the last core question and any useful follow-up, say: "Thank you {{candidate_name}}, that's all from my
   side. You'll get your feedback now." and stop.
 - Speak in English."""
 

@@ -12,8 +12,9 @@ export async function saveProfileWithAnswers(
   extraText: string,
   answers: Record<number, string>,
   discovery: Record<number, string>,
+  questions: string[] = profile.missing_info,
 ) {
-  const missingAnswers = profile.missing_info.flatMap((question, i) => {
+  const missingAnswers = questions.flatMap((question, i) => {
     const answer = answers[i]?.trim();
     return answer ? [{ question, answer }] : [];
   });
@@ -26,9 +27,7 @@ export async function saveProfileWithAnswers(
   // the backend contract. Preserve existing questions until POST /answers succeeds.
   const draft = {
     ...profile,
-    missing_info: [
-      ...new Set([...profile.missing_info, ...discoveryAnswers.map((a) => a.question)]),
-    ],
+    missing_info: [...new Set([...profile.missing_info, ...submitted.map((a) => a.question)])],
   };
   const saved = await client.updateProfile({ profile: draft, extra_text: extraText });
   return submitted.length ? client.answerProfile({ answers: submitted }) : saved;

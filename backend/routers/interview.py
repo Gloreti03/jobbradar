@@ -175,14 +175,18 @@ def _clean(turn: VoiceTurn) -> str:
     return text
 
 
-_STOPWORDS = {"that", "this", "with", "your", "what", "which", "about", "would", "have", "from", "there",
-              "they", "were", "been", "into", "when", "where", "while", "could", "should", "tell", "more"}
-QUESTION_MATCH_MIN = 0.35  # share of a plan question's words that an interviewer message must contain
 CLOSING_MARK = "that's all from my side"
+_VOICE_CONTROL = re.compile(
+    r"(?:please[ ,]+)?(?:(?:can|could|would|will) you (?:please )?)?"
+    r"(?:repeat|rephrase)(?: (?:that|it|the question|your question))?"
+    r"|(?:(?:i(?: would|'d)? (?:like|want) to|can we|could we|let's|please) )?"
+    r"(?:stop|end|finish)(?: (?:the|this|my|our))? (?:interview|call|session|practice)(?: now| here)?"
+    r"|stop|end|done", re.I,
+)
 
 
-def _words(text: str) -> set[str]:
-    return {w for w in re.findall(r"[a-zæøå0-9]+", text.lower()) if len(w) >= 4 and w not in _STOPWORDS}
+def _voice_control(text: str) -> bool:
+    return bool(_VOICE_CONTROL.fullmatch(text.strip(" .,!?")))
 
 
 def _question_text(text: str) -> str:
@@ -194,25 +198,13 @@ def _question_text(text: str) -> str:
     ))
 
 
-def _asked_question(text: str, plan: list[InterviewQuestion], index: int) -> int | None:
-    """Match only the question, not an acknowledgement mentioning the preceding topic."""
-    said = _words(text)
-    best, best_score = index, 0.0
-    for i in range(index, len(plan)):
-        q = _words(plan[i].question)
-        score = len(q & said) / len(q) if q else 0.0
-        if score > best_score:
-            best, best_score = i, score
-    return best if best_score >= QUESTION_MATCH_MIN else None
-
-
 def _question_starts(turns: list[VoiceTurn], plan: list[InterviewQuestion]) -> dict[int, int]:
     starts = {}
     questions = {}
     index, answered, ambiguous = 0, False, False
     for i, turn in enumerate(turns):
         if turn.role == "candidate":
-            answered = True
+            answered = answered or not _voice_control(turn.content)
             continue
         if CLOSING_MARK in turn.content.lower().replace("’", "'"):
             break
@@ -220,7 +212,11 @@ def _question_starts(turns: list[VoiceTurn], plan: list[InterviewQuestion]) -> d
         if not question:
             continue
         questions[i] = question
-        match = _asked_question(question, plan, index)
+        # Only verbatim plan questions are reliable anchors in an adaptive conversation.
+        # Word overlap alone can mistake a follow-up for a later, related core question.
+        normalized = " " + " ".join(re.findall(r"\w+", turn.content.casefold())) + " "
+        match = next((j for j in range(index, len(plan))
+                      if (" " + " ".join(re.findall(r"\w+", plan[j].question.casefold())) + " ") in normalized), None)
         if match is None:
             if answered:
                 ambiguous = True
@@ -260,7 +256,10 @@ def _assign_questions(
         if turn.role == "candidate":
             if index >= len(plan):
                 continue  # talking after the closing line: not part of the interview
-            if out and out[-1].role == "candidate":
+            if _voice_control(text):
+                out.append(TranscriptTurn(role="candidate", content=text, question_id=None))
+                continue
+            if out and out[-1].role == "candidate" and out[-1].question_id == plan[index].id:
                 out[-1] = out[-1].model_copy(update={"content": f"{out[-1].content} {text}"})
             else:
                 out.append(TranscriptTurn(role="candidate", content=text, question_id=plan[index].id))
@@ -293,7 +292,7 @@ def save_voice_transcript(application_id: int, body: VoiceTranscriptRequest, db:
     row = _latest_interview(db, application_id)
     plan = [InterviewQuestion.model_validate(q) for q in row.plan]
     transcript, spoken_plan = _assign_questions(body.transcript, plan)
-    if not any(t.role == "candidate" for t in transcript):
+    if not any(t.role == "candidate" and t.question_id is not None for t in transcript):
         raise HTTPException(status_code=422, detail="No answers in the voice transcript: nothing to evaluate")
 
     row.mode = "voice"
@@ -318,7 +317,11 @@ def interview_feedback(application_id: int, db: Session = Depends(get_db)):
     snapshot, _, language = _load_application(db, application_id)
     row = _latest_interview(db, application_id)
     if row.feedback:
-        return row.feedback
+        feedback = svc.normalize_feedback_score(InterviewFeedback.model_validate(row.feedback))
+        if feedback.overall_score != row.feedback.get("overall_score"):
+            row.feedback = feedback.model_dump(mode="json")
+            db.commit()
+        return feedback
     if _answers(row.transcript) == 0:
         raise HTTPException(status_code=409, detail="Answer at least one question before asking for feedback")
 
@@ -341,5 +344,6 @@ def get_interview(application_id: int, db: Session = Depends(get_db)):
         "mode": row.mode,
         "plan": row.plan,
         "transcript": row.transcript,
-        "feedback": row.feedback,
+        "feedback": (svc.normalize_feedback_score(InterviewFeedback.model_validate(row.feedback))
+                     if row.feedback else None),
     }

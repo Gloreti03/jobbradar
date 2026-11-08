@@ -27,6 +27,7 @@ import {
   DISCOVERY_QUESTIONS,
   mergeAttachments,
   splitProfileMaterial,
+  readProfileAnswers,
 } from "@/lib/profile-material";
 import { saveProfileWithAnswers } from "@/lib/save-profile";
 import { cacheUploadedProfile } from "@/lib/upload-profile-cache";
@@ -262,12 +263,24 @@ function ProfileEditor({ data }: { data: ProfileOut }) {
   const [p, setP] = useState<Profile>(data.profile);
   const material = splitProfileMaterial(data.extra_text);
   const [extraText, setExtraText] = useState(material.notes);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [discovery, setDiscovery] = useState<Record<number, string>>({});
+  const savedAnswers = readProfileAnswers(data.extra_text);
+  const questions = [
+    ...new Set([
+      ...Object.keys(savedAnswers).filter((q) => !DISCOVERY_QUESTIONS.includes(q)),
+      ...p.missing_info.filter((q) => !DISCOVERY_QUESTIONS.includes(q)),
+    ]),
+  ];
+  const [answers, setAnswers] = useState<Record<string, string>>(savedAnswers);
+  const [discovery, setDiscovery] = useState<Record<number, string>>(
+    Object.fromEntries(DISCOVERY_QUESTIONS.map((q, i) => [i, savedAnswers[q] ?? ""])),
+  );
   const [reupload, setReupload] = useState(false);
   const [uploadWarnings, setUploadWarnings] = useState<string[]>(data.warnings ?? []);
   useEffect(() => {
     setP(data.profile);
+    const saved = readProfileAnswers(data.extra_text);
+    setAnswers(saved);
+    setDiscovery(Object.fromEntries(DISCOVERY_QUESTIONS.map((q, i) => [i, saved[q] ?? ""])));
     setExtraText(splitProfileMaterial(data.extra_text).notes);
   }, [data]);
   useEffect(() => {
@@ -280,18 +293,28 @@ function ProfileEditor({ data }: { data: ProfileOut }) {
   const dirty =
     JSON.stringify(p) !== JSON.stringify(data.profile) ||
     extraText !== material.notes ||
-    Object.values(answers).some(Boolean) ||
-    Object.values(discovery).some(Boolean);
+    questions.some((q) => (answers[q] ?? "").trim() !== (savedAnswers[q] ?? "")) ||
+    DISCOVERY_QUESTIONS.some((q, i) => (discovery[i] ?? "").trim() !== (savedAnswers[q] ?? ""));
 
   const save = useMutation({
     mutationFn: () => {
       const text = [extraText, material.documents].filter(Boolean).join("\n\n");
-      return saveProfileWithAnswers(api, p, text, answers, discovery);
+      const changedAnswers = Object.fromEntries(
+        questions.flatMap((q, i) => {
+          const value = (answers[q] ?? "").trim();
+          return value !== (savedAnswers[q] ?? "") ? [[i, value]] : [];
+        }),
+      );
+      const changedDiscovery = Object.fromEntries(
+        DISCOVERY_QUESTIONS.flatMap((q, i) => {
+          const value = (discovery[i] ?? "").trim();
+          return value !== (savedAnswers[q] ?? "") ? [[i, value]] : [];
+        }),
+      );
+      return saveProfileWithAnswers(api, p, text, changedAnswers, changedDiscovery, questions);
     },
     onSuccess: (d) => {
       qc.setQueryData(qk.profile, d);
-      setAnswers({});
-      setDiscovery({});
       qc.invalidateQueries({ queryKey: ["job"] });
       qc.setQueryData(["radar", "last"], null);
       toast.success("Profile saved", {
@@ -354,7 +377,7 @@ function ProfileEditor({ data }: { data: ProfileOut }) {
 
       <DocumentWarnings warnings={uploadWarnings} />
 
-      {p.missing_info.length > 0 && (
+      {questions.length > 0 && (
         <details className="radar-panel questions-panel mb-4">
           <summary className="flex list-none items-center gap-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
@@ -365,19 +388,19 @@ function ProfileEditor({ data }: { data: ProfileOut }) {
                 A few details. A clearer direction.
               </span>
               <span className="mt-1 block text-xs text-muted-foreground">
-                {p.missing_info.length} questions to sharpen your profile
+                {questions.length} questions to sharpen your profile
               </span>
             </span>
             <Plus className="size-4 text-primary" />
           </summary>
           <div className="mt-6 space-y-4 border-t pt-5">
-            {p.missing_info.map((q, i) => (
+            {questions.map((q) => (
               <div key={q}>
                 <Label className="text-foreground">{q}</Label>
                 <Input
                   className="mt-1.5 bg-card"
-                  value={answers[i] ?? ""}
-                  onChange={(e) => setAnswers((a) => ({ ...a, [i]: e.target.value }))}
+                  value={answers[q] ?? ""}
+                  onChange={(e) => setAnswers((a) => ({ ...a, [q]: e.target.value }))}
                   placeholder="Your answer"
                 />
               </div>

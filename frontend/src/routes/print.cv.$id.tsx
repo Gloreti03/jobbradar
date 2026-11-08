@@ -19,7 +19,11 @@ export const Route = createFileRoute("/print/cv/$id")({
 
 function PrintCV() {
   const id = Number(Route.useParams().id);
-  const q = useQuery({ queryKey: qk.application(id), queryFn: () => api.getApplication(id), staleTime: 0 });
+  const q = useQuery({
+    queryKey: qk.application(id),
+    queryFn: () => api.getApplication(id),
+    staleTime: 0,
+  });
   const printed = useRef(false);
   useEffect(() => {
     if (q.isSuccess && !printed.current) {

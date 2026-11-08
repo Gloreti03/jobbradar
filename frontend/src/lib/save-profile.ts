@@ -24,7 +24,12 @@ export async function saveProfileWithAnswers(
   const submitted = [...missingAnswers, ...discoveryAnswers];
   // Register answered discovery questions in missing_info first, as required by
   // the backend contract. Preserve existing questions until POST /answers succeeds.
-  const draft = { ...profile, missing_info: [...new Set([...profile.missing_info, ...discoveryAnswers.map((a) => a.question)])] };
+  const draft = {
+    ...profile,
+    missing_info: [
+      ...new Set([...profile.missing_info, ...discoveryAnswers.map((a) => a.question)]),
+    ],
+  };
   const saved = await client.updateProfile({ profile: draft, extra_text: extraText });
   return submitted.length ? client.answerProfile({ answers: submitted }) : saved;
 }

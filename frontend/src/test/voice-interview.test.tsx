@@ -6,26 +6,60 @@ import fixture from "@/mocks/application.json";
 import interview from "@/mocks/interview.json";
 
 const mocks = vi.hoisted(() => ({
-  startSession: vi.fn(), endSession: vi.fn(), getVoiceSignedUrl: vi.fn(), startInterview: vi.fn(),
-  setMuted: vi.fn(), sendUserActivity: vi.fn(), saveVoiceTranscript: vi.fn(), interviewFeedback: vi.fn(),
-  muted: true, speaking: false,
+  startSession: vi.fn(),
+  endSession: vi.fn(),
+  getVoiceSignedUrl: vi.fn(),
+  startInterview: vi.fn(),
+  setMuted: vi.fn(),
+  sendUserActivity: vi.fn(),
+  saveVoiceTranscript: vi.fn(),
+  interviewFeedback: vi.fn(),
+  muted: true,
+  speaking: false,
   onMutedChange: undefined as undefined | ((muted: boolean) => void),
-  callbacks: {} as { onMessage?: (value: { message: string; source: string }) => void; onDisconnect?: () => void; onError?: (message: string) => void },
+  callbacks: {} as {
+    onMessage?: (value: { message: string; source: string }) => void;
+    onDisconnect?: () => void;
+    onError?: (message: string) => void;
+  },
 }));
 vi.mock("@elevenlabs/react", () => ({
-  ConversationProvider: ({ children, isMuted, onMutedChange }: { children: ReactNode; isMuted: boolean; onMutedChange: (value: boolean) => void }) => {
+  ConversationProvider: ({
+    children,
+    isMuted,
+    onMutedChange,
+  }: {
+    children: ReactNode;
+    isMuted: boolean;
+    onMutedChange: (value: boolean) => void;
+  }) => {
     mocks.muted = isMuted;
     mocks.onMutedChange = onMutedChange;
     return children;
   },
   useConversation: (options: typeof mocks.callbacks) => {
     mocks.callbacks = options;
-    return { startSession: mocks.startSession, endSession: mocks.endSession, sendUserActivity: mocks.sendUserActivity, isSpeaking: mocks.speaking, isMuted: mocks.muted,
-      setMuted: (value: boolean) => { mocks.setMuted(value); mocks.onMutedChange?.(value); } };
+    return {
+      startSession: mocks.startSession,
+      endSession: mocks.endSession,
+      sendUserActivity: mocks.sendUserActivity,
+      isSpeaking: mocks.speaking,
+      isMuted: mocks.muted,
+      setMuted: (value: boolean) => {
+        mocks.setMuted(value);
+        mocks.onMutedChange?.(value);
+      },
+    };
   },
 }));
-vi.mock("@/api", () => ({ api: { getVoiceSignedUrl: mocks.getVoiceSignedUrl, startInterview: mocks.startInterview,
-  saveVoiceTranscript: mocks.saveVoiceTranscript, interviewFeedback: mocks.interviewFeedback } }));
+vi.mock("@/api", () => ({
+  api: {
+    getVoiceSignedUrl: mocks.getVoiceSignedUrl,
+    startInterview: mocks.startInterview,
+    saveVoiceTranscript: mocks.saveVoiceTranscript,
+    interviewFeedback: mocks.interviewFeedback,
+  },
+}));
 import VoiceInterview from "@/components/radar/VoiceInterview";
 
 const originalMedia = Object.getOwnPropertyDescriptor(navigator, "mediaDevices");
@@ -38,7 +72,10 @@ beforeEach(() => {
   mocks.speaking = false;
   vi.stubGlobal("SpeechRecognition", undefined);
   vi.stubGlobal("webkitSpeechRecognition", undefined);
-  Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: { getUserMedia: media } });
+  Object.defineProperty(navigator, "mediaDevices", {
+    configurable: true,
+    value: { getUserMedia: media },
+  });
   HTMLElement.prototype.scrollIntoView = vi.fn();
 });
 afterEach(() => {
@@ -50,7 +87,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-async function connect(props = { app: fixture as ApplicationOut, onUseText: vi.fn(), onFeedback: vi.fn() }) {
+async function connect(
+  props = { app: fixture as ApplicationOut, onUseText: vi.fn(), onFeedback: vi.fn() },
+) {
   media.mockResolvedValue({ getTracks: () => [{ stop: vi.fn() }] });
   mocks.getVoiceSignedUrl.mockResolvedValue({ signed_url: "wss://example.invalid/test" });
   mocks.startInterview.mockResolvedValue({ message: "First question", plan: interview.plan });
@@ -62,6 +101,15 @@ async function connect(props = { app: fixture as ApplicationOut, onUseText: vi.f
 }
 
 describe("Voice connection recovery", () => {
+  it("keeps the call active across rerenders and ends it on unmount", async () => {
+    const view = await connect();
+    act(() => mocks.callbacks.onMessage?.({ message: "My answer", source: "user" }));
+    view.rerender(<VoiceInterview {...view.props} />);
+    expect(mocks.endSession).not.toHaveBeenCalled();
+    view.unmount();
+    expect(mocks.endSession).toHaveBeenCalledOnce();
+  });
+
   it("sends user activity every second only during an answer, without duplicate timers on rerender", async () => {
     await connect();
     vi.useFakeTimers();
@@ -99,7 +147,9 @@ describe("Voice connection recovery", () => {
   it("offers text mode without creating an interview when microphone access is denied", async () => {
     media.mockRejectedValue(new Error("Permission denied"));
     const useText = vi.fn();
-    render(<VoiceInterview app={fixture as ApplicationOut} onUseText={useText} onFeedback={vi.fn()} />);
+    render(
+      <VoiceInterview app={fixture as ApplicationOut} onUseText={useText} onFeedback={vi.fn()} />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Start voice interview" }));
     fireEvent.click(await screen.findByRole("button", { name: "Continue in text mode" }));
     expect(useText).toHaveBeenCalledOnce();
@@ -111,13 +161,22 @@ describe("Voice connection recovery", () => {
     const stop = vi.fn();
     media.mockResolvedValue({ getTracks: () => [{ stop }] });
     mocks.getVoiceSignedUrl.mockResolvedValue({ signed_url: "wss://example.invalid/test" });
-    mocks.startInterview.mockResolvedValue({ message: "Tell me about yourself", plan: [{ id: 1, question: "Tell me about yourself" }] });
+    mocks.startInterview.mockResolvedValue({
+      message: "Tell me about yourself",
+      plan: [{ id: 1, question: "Tell me about yourself" }],
+    });
     mocks.startSession.mockRejectedValue(new Error("Connection refused"));
-    render(<VoiceInterview app={fixture as ApplicationOut} onUseText={vi.fn()} onFeedback={vi.fn()} />);
+    render(
+      <VoiceInterview app={fixture as ApplicationOut} onUseText={vi.fn()} onFeedback={vi.fn()} />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Start voice interview" }));
-    expect(await screen.findByText(/Voice isn't available right now.*Connection refused/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Voice isn't available right now.*Connection refused/),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue in text mode" })).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByRole("button", { name: "Start voice interview" })).toBeEnabled());
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Start voice interview" })).toBeEnabled(),
+    );
     expect(stop).toHaveBeenCalledOnce();
   });
 
@@ -137,7 +196,12 @@ describe("Voice connection recovery", () => {
 
   it("removes agent emotion tags from the screen and saved transcript while preserving user text", async () => {
     await connect();
-    act(() => mocks.callbacks.onMessage?.({ message: "[thoughtful] [warm, friendly] First question", source: "ai" }));
+    act(() =>
+      mocks.callbacks.onMessage?.({
+        message: "[thoughtful] [warm, friendly] First question",
+        source: "ai",
+      }),
+    );
     act(() => mocks.callbacks.onMessage?.({ message: "[my note] I used Python", source: "user" }));
     expect(screen.getByText("First question")).toBeInTheDocument();
     expect(screen.queryByText(/thoughtful/)).not.toBeInTheDocument();
@@ -146,20 +210,28 @@ describe("Voice connection recovery", () => {
     mocks.interviewFeedback.mockResolvedValue(interview.feedback);
     fireEvent.click(screen.getByRole("button", { name: "End interview" }));
     fireEvent.click(screen.getByRole("button", { name: "Get my feedback" }));
-    await waitFor(() => expect(mocks.saveVoiceTranscript).toHaveBeenCalledWith(fixture.id, [
-      { role: "interviewer", content: "First question" }, { role: "candidate", content: "[my note] I used Python" },
-    ]));
+    await waitFor(() =>
+      expect(mocks.saveVoiceTranscript).toHaveBeenCalledWith(fixture.id, [
+        { role: "interviewer", content: "First question" },
+        { role: "candidate", content: "[my note] I used Python" },
+      ]),
+    );
   });
 
   it("shows provisional Chrome captions but only saves the final ElevenLabs messages", async () => {
     const recognizers: FakeRecognition[] = [];
     class FakeRecognition {
-      lang = ""; continuous = false; interimResults = false;
+      lang = "";
+      continuous = false;
+      interimResults = false;
       onresult: ((event: { results: { transcript: string }[][] }) => void) | null = null;
       onerror: (() => void) | null = null;
       onend: (() => void) | null = null;
-      start = vi.fn(); stop = vi.fn();
-      constructor() { recognizers.push(this); }
+      start = vi.fn();
+      stop = vi.fn();
+      constructor() {
+        recognizers.push(this);
+      }
     }
     vi.stubGlobal("webkitSpeechRecognition", FakeRecognition);
     await connect();
@@ -168,19 +240,27 @@ describe("Voice connection recovery", () => {
     expect(rec.lang).toBe("en-US");
     expect(rec.start).toHaveBeenCalledOnce();
     act(() => rec.onresult?.({ results: [[{ transcript: "Uhm, Temporary hum… browser words" }]] }));
-    expect(screen.getByRole("status", { name: "Your live captions" })).toHaveTextContent("Temporary browser words");
-    expect(screen.getByRole("status", { name: "Your live captions" })).not.toHaveTextContent(/\b(uhm|hum)\b/i);
+    expect(screen.getByRole("status", { name: "Your live captions" })).toHaveTextContent(
+      "Temporary browser words",
+    );
+    expect(screen.getByRole("status", { name: "Your live captions" })).not.toHaveTextContent(
+      /\b(uhm|hum)\b/i,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
     expect(rec.stop).toHaveBeenCalledOnce();
-    act(() => mocks.callbacks.onMessage?.({ message: "Um, Official ElevenLabs answer", source: "user" }));
+    act(() =>
+      mocks.callbacks.onMessage?.({ message: "Um, Official ElevenLabs answer", source: "user" }),
+    );
     expect(screen.queryByText("Temporary browser words")).not.toBeInTheDocument();
     expect(screen.getByText("Um, Official ElevenLabs answer")).toBeInTheDocument();
     mocks.saveVoiceTranscript.mockResolvedValue(interview);
     mocks.interviewFeedback.mockResolvedValue(interview.feedback);
     fireEvent.click(screen.getByRole("button", { name: "End interview" }));
     fireEvent.click(screen.getByRole("button", { name: "Get my feedback" }));
-    await waitFor(() => expect(mocks.saveVoiceTranscript).toHaveBeenCalledWith(fixture.id, [
-      { role: "candidate", content: "Um, Official ElevenLabs answer" },
-    ]));
+    await waitFor(() =>
+      expect(mocks.saveVoiceTranscript).toHaveBeenCalledWith(fixture.id, [
+        { role: "candidate", content: "Um, Official ElevenLabs answer" },
+      ]),
+    );
   });
 });

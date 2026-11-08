@@ -7,7 +7,9 @@ export async function cacheUploadedProfile(client: QueryClient, profile: Profile
   // the previous person's profile, applications or interview in the cache.
   if (profile.reset) {
     await client.cancelQueries();
-    client.removeQueries({ predicate: (query) => !(query.queryKey.length === 1 && query.queryKey[0] === "profile") });
+    client.removeQueries({
+      predicate: (query) => !(query.queryKey.length === 1 && query.queryKey[0] === "profile"),
+    });
   } else {
     await client.cancelQueries({ queryKey: qk.profile, exact: true });
     client.setQueryData(["radar", "last"], null);

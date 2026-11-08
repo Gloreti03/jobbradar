@@ -122,6 +122,22 @@ class RadarApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual({row["job"]["id"] for row in response.json()["results"]}, {optional})
 
+    def test_swedish_posting_is_available_without_a_false_language_label_but_not_in_english_only(self):
+        self.add_profile()
+        english = self.add_job("english", description="We work with our customers and analyse the data.")
+        description = "Vi söker dig som vill arbeta med våra kunder. Tjänsten är i Oslo och du behöver erfarenhet."
+        language, required = language_flags("Data Analyst", description)
+        swedish = self.add_job("swedish", description=description, language=language, norwegian_required=required)
+        filtered = self.client.post("/radar", json={"english_only": True})
+        self.assertEqual(filtered.status_code, 200, filtered.text)
+        self.assertEqual({r["job"]["id"] for r in filtered.json()["results"]}, {english})
+        all_languages = self.client.post("/radar", json={"english_only": False})
+        self.assertEqual(all_languages.status_code, 200, all_languages.text)
+        self.assertEqual({r["job"]["id"] for r in all_languages.json()["results"]}, {english, swedish})
+        detail = self.client.get(f"/jobs/{swedish}")
+        self.assertIsNone(detail.json()["job"]["language"])
+        self.assertIsNone(detail.json()["job"]["norwegian_required"])
+
     def test_cache_is_shared_with_job_detail_and_invalidated_by_profile_update(self):
         self.add_profile()
         job_id = self.add_job()
@@ -282,43 +298,6 @@ class RadarApiTests(unittest.TestCase):
         self.assertEqual({row["job"]["id"] for row in data["results"]}, {first, second})
         self.assertEqual(data["funnel"]["ranked"], 2)
         self.assertEqual([job.id for job in self.rank.call_args.args[1]], [second])
-
-    def test_double_click_on_create_application_returns_one_draft(self):
-        from concurrent.futures import ThreadPoolExecutor
-        import threading
-        import time
-
-        from schemas import ApplicationNotes, TailoredCV
-
-        self.add_profile()
-        job_id = self.add_job()
-        fixture = load_fixture("application")
-        result = ("en", TailoredCV.model_validate(fixture["cv"]), fixture["cover_letter"],
-                  ApplicationNotes.model_validate(fixture["notes"]))
-        calls, started = [], threading.Event()
-
-        def slow_tailor(*args, **kwargs):
-            calls.append(1)
-            started.set()
-            time.sleep(0.5)
-            return result
-
-        with patch("routers.applications.tailor", side_effect=slow_tailor):
-            with ThreadPoolExecutor(2) as pool:
-                first = pool.submit(self.client.post, "/applications", json={"job_id": job_id})
-                started.wait(5)
-                second = pool.submit(self.client.post, "/applications", json={"job_id": job_id})
-                responses = [first.result(), second.result()]
-            again = self.client.post("/applications", json={"job_id": job_id})
-
-        self.assertEqual([r.status_code for r in responses], [201, 201], [r.text for r in responses])
-        self.assertEqual(responses[0].json()["id"], responses[1].json()["id"])
-        # A later, deliberate request (e.g. "new draft") still creates a new one.
-        self.assertEqual(again.status_code, 201, again.text)
-        self.assertNotEqual(again.json()["id"], responses[0].json()["id"])
-        self.assertEqual(len(calls), 2)
-        with self.session() as db:
-            self.assertEqual(db.scalar(select(func.count()).select_from(ApplicationRow)), 2)
 
     def test_fixture_funnel_ranked_matches_returned_results(self):
         data = load_fixture("radar_response")

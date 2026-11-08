@@ -33,7 +33,8 @@ def create_application(body: ApplicationCreate, db: Session = Depends(get_db)):
     if profile is None:
         raise HTTPException(status_code=404, detail="No profile yet: upload your CV first")
     job_row = get_job_row(db, body.job_id)
-    extra_text = get_profile_row(db).extra_text
+    profile_row = get_profile_row(db)
+    profile_state = (profile_row.data, profile_row.updated_at, profile_row.extra_text)
 
     # A draft for this job committed after this request arrived means the same request is
     # already being served (double click): return that draft instead of generating another.
@@ -45,11 +46,17 @@ def create_application(body: ApplicationCreate, db: Session = Depends(get_db)):
         ).order_by(ApplicationRow.id))
         if duplicate is not None:
             return application_out(db, duplicate)
-        return _create_draft(db, profile, job_row, extra_text)
+        return _create_draft(db, profile, job_row, profile_state)
 
 
-def _create_draft(db: Session, profile, job_row, extra_text) -> ApplicationOut:
-    language, cv, cover_letter, notes = tailor(profile, JobOut.model_validate(job_row), extra_text)
+def _create_draft(db: Session, profile, job_row, profile_state) -> ApplicationOut:
+    language, cv, cover_letter, notes = tailor(profile, JobOut.model_validate(job_row), profile_state[2])
+
+    # Documents written for a profile that changed meanwhile (e.g. a new CV upload) are stale.
+    db.rollback()  # end the read transaction to see the current profile
+    current = get_profile_row(db)
+    if current is None or (current.data, current.updated_at, current.extra_text) != profile_state:
+        raise HTTPException(status_code=409, detail="Profile changed while creating the application. Please retry.")
 
     row = ApplicationRow(
         job_id=job_row.id,

@@ -2,6 +2,8 @@
 
 Web app + browser extension for people job hunting in Oslo. Built at the Oslo hackathon, 7–8 Nov 2026.
 
+▶️ **Demo video:** https://youtu.be/s0bwvUw90ec
+
 1. **Profile** – upload your CV (PDF) and anything else about you. JobbRadar turns it into a structured profile.
 2. **Radar** – one click finds the recently published, still open jobs that fit you best, each with reasons, gaps and a "Norwegian probably required" badge.
 3. **Apply** – pick a job: JobbRadar writes a tailored CV and cover letter that **never invent anything**

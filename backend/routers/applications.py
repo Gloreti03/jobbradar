@@ -1,13 +1,13 @@
 """C — Applications (owner: Gabriele)."""
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Response
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from db import get_db
 from models import ApplicationRow
 from schemas import ApplicationCreate, ApplicationOut, ApplicationPatch, JobOut
-from services.application_store import application_out, get_application_row, get_job_row
+from services.application_store import application_out, find_application_for_job, get_application_row, get_job_row
 from services.profile_store import get_profile, get_profile_row
 from services.tailor import tailor
 
@@ -20,26 +20,46 @@ def list_applications(db: Session = Depends(get_db)):
     return [application_out(db, r) for r in rows]
 
 
-@router.post("", response_model=ApplicationOut, status_code=201)
-def create_application(body: ApplicationCreate, db: Session = Depends(get_db)):
-    """Generate a tailored CV + cover letter for the job (~20 s). Initial status: draft."""
+@router.post("", response_model=ApplicationOut, status_code=201,
+             responses={200: {"model": ApplicationOut, "description": "Existing application for this job"}})
+def create_application(body: ApplicationCreate, response: Response, db: Session = Depends(get_db)):
+    """Create one draft per job, or return the existing application without regenerating it."""
     profile = get_profile(db)
     if profile is None:
         raise HTTPException(status_code=404, detail="No profile yet: upload your CV first")
+    existing = find_application_for_job(db, body.job_id)
+    if existing is not None:
+        response.status_code = 200
+        return application_out(db, existing)
+
     job_row = get_job_row(db, body.job_id)
-    extra_text = get_profile_row(db).extra_text
+    profile_row = get_profile_row(db)
+    profile_data, profile_updated, extra_text = profile_row.data, profile_row.updated_at, profile_row.extra_text
 
     language, cv, cover_letter, notes = tailor(profile, JobOut.model_validate(job_row), extra_text)
 
-    row = ApplicationRow(
-        job_id=job_row.id,
-        status="draft",
-        language=language,
-        cv=cv.model_dump(mode="json"),
-        cover_letter=cover_letter,
-        notes=notes.model_dump(mode="json"),
-    )
-    db.add(row)
+    # Do not hold a database write lock during the model call. Once documents are ready,
+    # serialize the final lookup + insert across threads AND backend processes. A second
+    # request may have saved this job while this request was generating its documents.
+    db.rollback()  # end the read transaction and refresh objects before the locked check
+    db.execute(text("BEGIN IMMEDIATE"))
+    current_profile = get_profile_row(db)
+    if (current_profile is None or current_profile.data != profile_data
+            or current_profile.updated_at != profile_updated or current_profile.extra_text != extra_text):
+        raise HTTPException(status_code=409, detail="Profile changed while creating the application. Please retry.")
+    row = find_application_for_job(db, body.job_id)
+    if row is not None:
+        response.status_code = 200
+    else:
+        row = ApplicationRow(
+            job_id=body.job_id,
+            status="draft",
+            language=language,
+            cv=cv.model_dump(mode="json"),
+            cover_letter=cover_letter,
+            notes=notes.model_dump(mode="json"),
+        )
+        db.add(row)
     db.commit()
     db.refresh(row)
     return application_out(db, row)

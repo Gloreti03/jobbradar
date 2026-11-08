@@ -7,6 +7,7 @@ Used by routers/applications.py (Gabriele) and routers/tracking.py (Matilde):
 from typing import Any
 
 from fastapi import HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from fixtures import fixture_job
@@ -33,6 +34,12 @@ def get_application_row(db: Session, application_id: int) -> ApplicationRow:
     if row is None:
         raise HTTPException(status_code=404, detail=f"Application {application_id} not found")
     return row
+
+
+def find_application_for_job(db: Session, job_id: int) -> ApplicationRow | None:
+    """Reuse the latest existing row, including databases with historical duplicates."""
+    return db.scalar(select(ApplicationRow).where(ApplicationRow.job_id == job_id)
+                     .order_by(ApplicationRow.id.desc()).limit(1))
 
 
 def application_out(db: Session, row: ApplicationRow) -> dict[str, Any]:

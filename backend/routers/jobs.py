@@ -1,13 +1,13 @@
 """B — Current job, profile match and latest application (owner: Stefano)."""
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from db import get_db
-from models import ApplicationRow, JobRow, MatchRow
+from models import JobRow, MatchRow
 from radar.providers.base import as_utc, job_out
 from schemas import JobDetail
+from services.application_store import find_application_for_job
 from services.profile_store import get_profile_row
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -22,5 +22,5 @@ def get_job(job_id: int, db: Session = Depends(get_db)):
     match = db.get(MatchRow, (profile.id, job_id)) if profile else None
     if match and as_utc(match.created_at) < as_utc(profile.updated_at):
         match = None
-    application = db.scalar(select(ApplicationRow).where(ApplicationRow.job_id == job_id).order_by(ApplicationRow.id.desc()).limit(1))
+    application = find_application_for_job(db, job_id)
     return {"job": job_out(job), "match": match, "application": application}

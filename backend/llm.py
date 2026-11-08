@@ -1,4 +1,4 @@
-"""The ONLY entry point to DeepSeek (BLUEPRINT sec. 8).
+"""The ONLY entry point to DeepSeek (see README, "Rules for everyone").
 
 Usage:
     from llm import complete_json, acomplete_json

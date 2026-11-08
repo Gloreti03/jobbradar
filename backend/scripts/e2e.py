@@ -21,7 +21,7 @@ import httpx
 REPO_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_CV = REPO_DIR / "fixtures" / "sample_cv.pdf"
 
-# BLUEPRINT time budgets (seconds)
+# Time budgets (seconds)
 LIMITS = {"A upload CV": 30, "B radar": 25, "C application": 30}
 
 ANSWERS = [

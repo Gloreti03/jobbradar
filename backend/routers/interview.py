@@ -13,7 +13,7 @@ Flow (voice mode, ElevenLabs):
   POST /interview/{application_id}/feedback                  -> same evaluation as text mode
 
 Unlocked only for applications in status applied/interviewing/rejected/offer (with a snapshot).
-Proxy (BLUEPRINT sec. 9): if application_id is not in the DB but is the id of
+Proxy (fixtures): if application_id is not in the DB but is the id of
 fixtures/application.json, that fake application (already applied) is used.
 """
 

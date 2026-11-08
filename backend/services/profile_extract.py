@@ -250,7 +250,7 @@ def extract_profile(cv_text: str, extra_text: str = "") -> Profile:
         cv_text=cv_text[:MAX_CV_CHARS] or "(no CV text: use the extra material)",
         extra_text=extra_text[:MAX_EXTRA_CHARS] or "(none)",
     )
-    # fast model without hidden reasoning: ~8 s vs ~30-40 s with it, same quality in tests (BLUEPRINT: < 30 s)
+    # fast model without hidden reasoning: ~8 s vs ~30-40 s with it, same quality in tests (target: < 30 s)
     profile = complete_json(
         "fast", PROFILE_EXTRACT_SYSTEM, user, Profile, temperature=0.1, max_tokens=8000, reasoning_effort="none"
     )

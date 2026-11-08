@@ -316,7 +316,7 @@ _LESSON = re.compile(
 
 
 def _strip_invented_lessons(text: str) -> str:
-    """Safety net: drop sentences that add a "lesson learned" / insight (BLUEPRINT sec. 8).
+    """Safety net: drop sentences that add a "lesson learned" / insight (README, "Rules for everyone").
     Keeps the text unchanged if removing them would leave almost nothing."""
     sentences = re.split(r"(?<=[.!?])\s+", text.strip())
     kept = [s for s in sentences if not _LESSON.search(s)]

@@ -16,7 +16,7 @@ from schemas import JobOut
 
 
 def get_job_row(db: Session, job_id: int) -> JobRow:
-    """Job from the DB. Until the Radar has filled the DB (BLUEPRINT sec. 9), an id that exists
+    """Job from the DB. Until the Radar has filled the DB (fixtures), an id that exists
     only in fixtures/jobs.json is copied into the DB, so the application has a real job to point to."""
     row = db.get(JobRow, job_id)
     if row is not None:

@@ -56,12 +56,27 @@ def contains_term(text: str, term: str) -> bool:
     return bool(re.search(r"(?<!\w)" + re.escape(term) + r"(?!\w)", text))
 
 
+NORWEGIAN_WORDS = {
+    "og", "som", "til", "søker", "er", "med", "arbeid", "arbeidsoppgaver", "kvalifikasjoner",
+    "deg", "du", "vi", "ikke", "erfaring", "stillingen", "å",
+}
+ENGLISH_WORDS = {"the", "and", "with", "you", "we", "our", "are", "requirements", "experience", "work"}
+# Only words that are not also Norwegian; any word with ä/ö counts as Swedish too.
+SWEDISH_WORDS = {"och", "att", "inte", "erfarenhet", "arbeta", "inom", "tjänsten", "kunskaper", "vill", "hur", "också"}
+
+
 def language_flags(title: str, description: str) -> tuple[str | None, bool | None]:
     text = f"{title}\n{description}".casefold()
-    words = re.findall(r"[a-zæøå]+", text)
-    norwegian = sum(word in {"og", "som", "til", "søker", "er", "med", "arbeid", "arbeidsoppgaver", "kvalifikasjoner", "deg", "du", "vi"} for word in words)
-    english = sum(word in {"the", "and", "with", "you", "we", "our", "are", "requirements", "experience", "work"} for word in words)
-    language = "no" if norwegian > english else "en" if english else None
+    words = re.findall(r"[a-zæøåäö]+", text)
+    norwegian = sum(word in NORWEGIAN_WORDS for word in words)
+    english = sum(word in ENGLISH_WORDS for word in words)
+    # Swedish shares many short words with Norwegian ("som", "med", "du", "vi"):
+    # an ad with more Swedish markers is neither Norwegian nor English.
+    swedish = sum(word in SWEDISH_WORDS or bool(re.search(r"[äö]", word)) for word in words)
+    if swedish > norwegian and swedish > english:
+        language = None
+    else:
+        language = "no" if norwegian > english else "en" if english else None
     # Remove optional language phrases before checking the remaining requirements.
     # A separate mandatory clause still wins over an optional one.
     requirement_text, optional_count = OPTIONAL_NORWEGIAN.subn(" ", text)

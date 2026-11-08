@@ -1,7 +1,10 @@
 """C — Applications (owner: Gabriele)."""
 
+import threading
+from collections import defaultdict
+
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from db import get_db
@@ -12,6 +15,9 @@ from services.profile_store import get_profile, get_profile_row
 from services.tailor import tailor
 
 router = APIRouter(prefix="/applications", tags=["applications"])
+
+# One generation at a time per job, so a double click does not create two identical drafts.
+_job_locks: defaultdict[int, threading.Lock] = defaultdict(threading.Lock)
 
 
 @router.get("", response_model=list[ApplicationOut])
@@ -29,6 +35,20 @@ def create_application(body: ApplicationCreate, db: Session = Depends(get_db)):
     job_row = get_job_row(db, body.job_id)
     extra_text = get_profile_row(db).extra_text
 
+    # A draft for this job committed after this request arrived means the same request is
+    # already being served (double click): return that draft instead of generating another.
+    last_id = db.scalar(select(func.max(ApplicationRow.id))) or 0
+    with _job_locks[job_row.id]:
+        db.commit()  # end the read transaction so drafts committed meanwhile are visible
+        duplicate = db.scalar(select(ApplicationRow).where(
+            ApplicationRow.job_id == job_row.id, ApplicationRow.id > last_id,
+        ).order_by(ApplicationRow.id))
+        if duplicate is not None:
+            return application_out(db, duplicate)
+        return _create_draft(db, profile, job_row, extra_text)
+
+
+def _create_draft(db: Session, profile, job_row, extra_text) -> ApplicationOut:
     language, cv, cover_letter, notes = tailor(profile, JobOut.model_validate(job_row), extra_text)
 
     row = ApplicationRow(

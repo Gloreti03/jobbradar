@@ -315,3 +315,16 @@ class LanguageRequirementTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LanguageDetectionTests(unittest.TestCase):
+    def test_swedish_ad_is_not_norwegian(self):
+        text = ("Vi söker en systemutvecklare som vill arbeta med oss. Du har erfarenhet av Python "
+                "och är nyfiken på teknik. Tjänsten är placerad i Stockholm.")
+        self.assertIsNone(language_flags("Systemutvecklare", text)[0])
+
+    def test_norwegian_and_english_ads_keep_their_language(self):
+        norwegian = "Vi søker en utvikler som har erfaring med Python og vil jobbe i et team. Du er nysgjerrig."
+        english = "We are looking for a developer with experience in Python and you will work in our team."
+        self.assertEqual(language_flags("Utvikler", norwegian)[0], "no")
+        self.assertEqual(language_flags("Developer", english)[0], "en")

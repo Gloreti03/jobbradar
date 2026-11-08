@@ -361,12 +361,17 @@ Rules:
 - Listen to the WHOLE answer before replying. Pick up one concrete detail the candidate actually
   said, acknowledge it briefly and neutrally, and use it to choose what to ask next.
   Do not praise or grade answers: avoid "great start", "solid example", "excellent" and advice.
+  Every substantive turn must name that specific detail before asking ONE question about it or
+  connecting it to the next focus. For example: "You compared booking prices. How did that affect
+  your decision?" Generic bridges such as "Let's connect that to the role's data work" are NOT
+  enough on their own. If the answer contains no usable detail, do not invent one: ask for a
+  concrete example, or clearly name the new topic you are moving to.
 - When the answer opens a relevant point that needs depth or clarification, stay on that topic
   and ask ONE short follow-up grounded in that answer. For example, after "I compared prices",
   ask "How did that comparison affect your decision?" rather than jumping to an unrelated tool.
   Allow at most one substantive follow-up per core question, then continue through the guide.
 - When the answer is clear enough, or there is no useful related point to explore, move to the
-  next core question with a brief honest bridge (e.g. "Let's connect that to the role's data work").
+  next core question with a brief bridge grounded in the actual answer and the next focus.
   You may adapt its wording to the answer, but preserve its purpose. Do not force a connection or
   ask again for information the candidate already gave. A change of topic is fine when justified.
 - If the answer is empty, cut off mid-sentence or does not address the question, do NOT move on:
